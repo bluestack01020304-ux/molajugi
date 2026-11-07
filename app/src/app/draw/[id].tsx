@@ -33,7 +33,7 @@ export default function DrawResultScreen() {
           <Text style={styles.winTitle}>🎉 당첨!</Text>
           <Pressable
             style={styles.primary}
-            onPress={() => router.replace(`/gifticon/${id}` as never)}>
+            onPress={() => router.replace({ pathname: '/gifticon/[id]', params: { id } })}>
             <Text style={styles.primaryText}>바코드 보기</Text>
           </Pressable>
         </View>

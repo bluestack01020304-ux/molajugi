@@ -19,6 +19,10 @@ export default function RootLayout() {
           <Stack.Screen name="login" />
           <Stack.Screen name="listing/[id]" options={{ headerShown: true, presentation: 'card' }} />
           <Stack.Screen name="draw/[id]" options={{ headerShown: true, presentation: 'card' }} />
+          <Stack.Screen
+            name="gifticon/[id]"
+            options={{ headerShown: true, presentation: 'card', title: '당첨 기프티콘' }}
+          />
         </Stack>
       </NotificationsProvider>
     </WalletProvider>

@@ -1,6 +1,6 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 
-import type { Category, Listing } from './database.types';
+import type { Category, Draw, Listing, ListingSecret, Settlement } from './database.types';
 import { addDays, todayKst } from './format';
 import { supabase } from './supabase';
 
@@ -69,4 +69,70 @@ export async function draw(
   listingId: string,
 ): Promise<{ draw_id: string; result: 'win' | 'miss'; balance: number }> {
   return invoke('draw', { listing_id: listingId });
+}
+
+export type Win = { draw: Draw; listing: Listing; settlement: Settlement };
+
+export async function fetchMyWins(): Promise<Win[]> {
+  const { data: userData } = await supabase.auth.getUser();
+  const uid = userData.user?.id;
+  if (!uid) throw new ApiError('UNAUTHORIZED');
+  const { data: draws, error } = await supabase
+    .from('draws')
+    .select('*')
+    .eq('buyer_id', uid)
+    .eq('result', 'win')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  if (!draws || draws.length === 0) return [];
+  const listingIds = draws.map((d) => d.listing_id).filter((x): x is string => !!x);
+  const [l, s] = await Promise.all([
+    supabase.from('listings').select('*').in('id', listingIds),
+    supabase.from('settlements').select('*').in('draw_id', draws.map((d) => d.id)),
+  ]);
+  if (l.error) throw l.error;
+  if (s.error) throw s.error;
+  const listings = new Map((l.data ?? []).map((x) => [x.id, x]));
+  const settlements = new Map((s.data ?? []).map((x) => [x.draw_id, x]));
+  const wins: Win[] = [];
+  for (const d of draws) {
+    const listing = d.listing_id ? listings.get(d.listing_id) : undefined;
+    const settlement = settlements.get(d.id);
+    if (listing && settlement) wins.push({ draw: d, listing, settlement });
+  }
+  return wins;
+}
+
+export async function fetchWinDetail(drawId: string): Promise<{
+  draw: Draw;
+  listing: Listing;
+  secret: ListingSecret;
+  settlement: Settlement;
+}> {
+  const { data: d, error } = await supabase.from('draws').select('*').eq('id', drawId).maybeSingle();
+  if (error) throw error;
+  if (!d || !d.listing_id) throw new ApiError('BAD_REQUEST');
+  const [l, sec, st] = await Promise.all([
+    supabase.from('listings').select('*').eq('id', d.listing_id).maybeSingle(),
+    supabase.from('listing_secrets').select('*').eq('listing_id', d.listing_id).maybeSingle(),
+    supabase.from('settlements').select('*').eq('draw_id', drawId).maybeSingle(),
+  ]);
+  if (l.error) throw l.error;
+  if (sec.error) throw sec.error;
+  if (st.error) throw st.error;
+  if (!l.data || !sec.data || !st.data) throw new ApiError('BAD_REQUEST');
+  return { draw: d, listing: l.data, secret: sec.data, settlement: st.data };
+}
+
+export async function signedImageUrl(path: string): Promise<string> {
+  const { data, error } = await supabase.storage.from('gifticons').createSignedUrl(path, 600);
+  if (error || !data) throw error ?? new ApiError('INTERNAL');
+  return data.signedUrl;
+}
+
+export async function settle(
+  drawId: string,
+  action: 'confirm' | 'report',
+): Promise<{ status: string }> {
+  return invoke('settle', { draw_id: drawId, action });
 }
