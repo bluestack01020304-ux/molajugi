@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useRules } from '@/hooks/useRules';
 import type { Probability } from '@/lib/database.types';
 import { formatWon, previewPrice } from '@/lib/format';
+import { colors, radius } from '@/lib/theme';
 
 export function PresetPicker({
   faceValue,
@@ -24,7 +25,9 @@ export function PresetPicker({
             onPress={() => onChange(p)}
             style={[styles.btn, selected && styles.btnSelected]}>
             <Text style={[styles.pct, selected && styles.pctSelected]}>{`${p}%`}</Text>
-            <Text style={styles.price}>{faceValue > 0 ? formatWon(previewPrice(faceValue, p)) : '—'}</Text>
+            <Text style={[styles.price, selected && styles.priceSelected]}>
+              {faceValue > 0 ? formatWon(previewPrice(faceValue, p)) : '—'}
+            </Text>
           </Pressable>
         );
       })}
@@ -38,14 +41,15 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 2,
-    borderColor: '#ddd',
-    backgroundColor: '#fff',
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    backgroundColor: colors.bg,
     gap: 4,
   },
-  btnSelected: { borderColor: '#e8531f', backgroundColor: '#fff1ea' },
-  pct: { fontSize: 18, fontWeight: '700', color: '#444' },
-  pctSelected: { color: '#e8531f' },
-  price: { fontSize: 13, color: '#666' },
+  btnSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
+  pct: { fontSize: 18, fontWeight: '800', color: colors.ink },
+  pctSelected: { color: colors.primary },
+  price: { fontSize: 13, color: colors.sub },
+  priceSelected: { color: colors.primary },
 });

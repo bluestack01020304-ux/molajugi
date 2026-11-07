@@ -3,7 +3,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   Image,
   KeyboardAvoidingView,
@@ -18,11 +17,13 @@ import {
 
 import { CategoryChips } from '@/components/CategoryChips';
 import { PresetPicker } from '@/components/PresetPicker';
+import { Button } from '@/components/ui/Button';
 import { useRules } from '@/hooks/useRules';
 import { ApiError, createListing, messageFor, uploadGifticonImage } from '@/lib/api';
 import type { Category, Probability } from '@/lib/database.types';
 import { formatWon, previewPrice } from '@/lib/format';
 import { previewNet } from '@/lib/rules';
+import { colors, radius, space, type } from '@/lib/theme';
 
 function isRealDate(s: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
@@ -208,65 +209,52 @@ export default function NewListingScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Pressable
-          style={[styles.submit, (!valid || busy) && styles.submitDisabled]}
-          disabled={!valid || busy}
-          onPress={submit}>
-          {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.submitText}>올리기</Text>}
-        </Pressable>
+        <Button title="올리기" disabled={!valid} busy={busy} onPress={submit} />
       </View>
     </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1, backgroundColor: '#fafafa' },
-  content: { padding: 16, gap: 8 },
+  flex: { flex: 1, backgroundColor: colors.bg },
+  content: { padding: space.screen, gap: 8 },
   imageBox: {
     height: 180,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderStyle: 'dashed',
-    backgroundColor: '#fff',
+    borderRadius: radius.md,
+    backgroundColor: colors.bg2,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
   image: { width: '100%', height: '100%' },
-  imageHint: { color: '#888', fontSize: 15 },
-  label: { fontSize: 13, fontWeight: '600', color: '#444', marginTop: 8 },
-  chipsWrap: { marginHorizontal: -16 },
+  imageHint: { color: colors.sub, fontSize: 15 },
+  label: { ...type.label, marginTop: 8 },
+  chipsWrap: { marginHorizontal: -space.screen },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: '#fff',
+    borderRadius: radius.sm,
+    backgroundColor: colors.bg2,
     paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingVertical: 12,
     fontSize: 16,
+    color: colors.ink,
   },
-  inputText: { fontSize: 16, color: '#222' },
-  placeholder: { fontSize: 16, color: '#999' },
+  inputText: { fontSize: 16, color: colors.ink },
+  placeholder: { fontSize: 16, color: colors.faint },
   pickerBox: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    backgroundColor: '#fff',
+    borderRadius: radius.sm,
+    backgroundColor: colors.bg2,
     marginTop: 6,
     alignItems: 'center',
   },
   pickerDone: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: 10 },
-  pickerDoneText: { color: '#e8531f', fontSize: 16, fontWeight: '700' },
-  warn: { color: '#c0392b', fontSize: 12 },
-  explain: { marginTop: 8, fontSize: 14, color: '#444' },
+  pickerDoneText: { color: colors.primary, fontSize: 16, fontWeight: '700' },
+  warn: { color: colors.danger, fontSize: 12 },
+  explain: { ...type.body, marginTop: 8, color: colors.ink },
   footer: {
-    padding: 12,
-    backgroundColor: '#fff',
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: '#ddd',
+    padding: space.screen,
+    paddingTop: 10,
+    backgroundColor: colors.bg,
+    borderTopWidth: 1,
+    borderTopColor: colors.line,
   },
-  submit: { backgroundColor: '#e8531f', borderRadius: 10, paddingVertical: 14, alignItems: 'center' },
-  submitDisabled: { backgroundColor: '#ccc' },
-  submitText: { color: '#fff', fontSize: 16, fontWeight: '700' },
 });

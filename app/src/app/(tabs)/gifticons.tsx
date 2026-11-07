@@ -3,7 +3,10 @@ import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { StatusBadge, settlementBadge } from '@/components/StatusBadge';
+import { Button } from '@/components/ui/Button';
+import { Thumb } from '@/components/ui/Thumb';
 import { fetchMyWins, type Win } from '@/lib/api';
+import { colors, space, type } from '@/lib/theme';
 
 export default function GifticonsScreen() {
   const router = useRouter();
@@ -45,7 +48,7 @@ export default function GifticonsScreen() {
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator style={styles.loading} color="#e8531f" />
+        <ActivityIndicator style={styles.loading} color={colors.primary} />
       </View>
     );
   }
@@ -53,14 +56,14 @@ export default function GifticonsScreen() {
     return (
       <View style={[styles.container, styles.errorBox]}>
         <Text style={styles.empty}>목록을 불러오지 못했어요</Text>
-        <Pressable
-          style={styles.retry}
+        <Button
+          variant="soft"
+          title="다시 시도"
           onPress={() => {
             setLoading(true);
             load();
-          }}>
-          <Text style={styles.retryText}>다시 시도</Text>
-        </Pressable>
+          }}
+        />
       </View>
     );
   }
@@ -76,14 +79,12 @@ export default function GifticonsScreen() {
             <Pressable
               style={styles.row}
               onPress={() => router.push({ pathname: '/gifticon/[id]', params: { id: item.draw.id } })}>
+              <Thumb category={item.listing.category} size={52} />
               <View style={styles.mid}>
-                <Text style={styles.brand} numberOfLines={1}>
-                  {item.listing.brand}
+                <Text style={styles.title} numberOfLines={1}>
+                  {`${item.listing.brand} ${item.listing.product_name}`}
                 </Text>
-                <Text style={styles.name} numberOfLines={1}>
-                  {item.listing.product_name}
-                </Text>
-                <Text style={styles.meta}>{`유효기간 ${item.listing.expires_on}`}</Text>
+                <Text style={styles.meta}>{`유효기간 ${item.listing.expires_on.replace(/-/g, '.')}`}</Text>
               </View>
               <StatusBadge label={b.label} tone={b.tone} />
             </Pressable>
@@ -98,24 +99,22 @@ export default function GifticonsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fafafa' },
+  container: { flex: 1, backgroundColor: colors.bg },
   loading: { marginTop: 40 },
   emptyContainer: { flexGrow: 1, justifyContent: 'center' },
-  errorBox: { alignItems: 'center', justifyContent: 'center', gap: 12 },
-  retry: { backgroundColor: '#e8531f', borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10 },
-  retryText: { color: '#fff', fontWeight: '700' },
-  empty: { textAlign: 'center', color: '#888', fontSize: 15 },
+  errorBox: { alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 },
+  empty: { textAlign: 'center', color: colors.sub, fontSize: 15 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    gap: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    paddingHorizontal: space.screen,
+    paddingVertical: 12,
+    gap: space.gap,
+    backgroundColor: colors.bg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
   },
-  mid: { flex: 1, gap: 2 },
-  brand: { fontSize: 12, color: '#888' },
-  name: { fontSize: 16, fontWeight: '600', color: '#222' },
-  meta: { fontSize: 12, color: '#888' },
+  mid: { flex: 1, minWidth: 0, gap: 3 },
+  title: { ...type.rowTitle, color: colors.ink },
+  meta: type.meta,
 });

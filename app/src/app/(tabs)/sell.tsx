@@ -3,8 +3,14 @@ import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { StatusBadge, listingBadge } from '@/components/StatusBadge';
+import { Button } from '@/components/ui/Button';
+import { Fab } from '@/components/ui/Fab';
+import { Thumb } from '@/components/ui/Thumb';
 import { ApiError, fetchMyListings, messageFor, withdrawListing, type MyListing } from '@/lib/api';
-import { formatPoints } from '@/lib/format';
+import { formatWon } from '@/lib/format';
+import { colors, space, type } from '@/lib/theme';
+
+const FAB_CLEARANCE = 96;
 
 export default function SellScreen() {
   const router = useRouter();
@@ -61,34 +67,31 @@ export default function SellScreen() {
     ]);
   }
 
-  const header = (
-    <Pressable style={styles.newBtn} onPress={() => router.push('/sell/new')}>
-      <Text style={styles.newBtnText}>+ 새 기프티콘 올리기</Text>
-    </Pressable>
-  );
+  const fab = <Fab onPress={() => router.push('/sell/new')} />;
 
   if (loading) {
     return (
       <View style={styles.container}>
-        <ActivityIndicator style={styles.loading} color="#e8531f" />
+        <ActivityIndicator style={styles.loading} color={colors.primary} />
+        {fab}
       </View>
     );
   }
   if (error) {
     return (
       <View style={styles.container}>
-        {header}
         <View style={styles.errorBox}>
           <Text style={styles.empty}>목록을 불러오지 못했어요</Text>
-          <Pressable
-            style={styles.retry}
+          <Button
+            variant="soft"
+            title="다시 시도"
             onPress={() => {
               setLoading(true);
               load();
-            }}>
-            <Text style={styles.retryText}>다시 시도</Text>
-          </Pressable>
+            }}
+          />
         </View>
+        {fab}
       </View>
     );
   }
@@ -98,7 +101,6 @@ export default function SellScreen() {
       <FlatList
         data={items}
         keyExtractor={(l) => l.id}
-        ListHeaderComponent={header}
         renderItem={({ item }) => {
           const b = listingBadge(item);
           return (
@@ -106,12 +108,13 @@ export default function SellScreen() {
               style={styles.row}
               disabled={item.status !== 'active'}
               onPress={() => confirmWithdraw(item)}>
+              <Thumb category={item.category} size={52} />
               <View style={styles.mid}>
-                <Text style={styles.name} numberOfLines={1}>
-                  {item.product_name}
+                <Text style={styles.title} numberOfLines={1}>
+                  {`${item.brand} ${item.product_name}`}
                 </Text>
-                <Text style={styles.meta}>
-                  {`${item.probability}% · ${item.miss_count}번 꽝 · ${formatPoints(item.settled_net)} 정산됨`}
+                <Text style={styles.meta} numberOfLines={1}>
+                  {`${item.probability}% · ${item.miss_count}번 꽝 · ${formatWon(item.settled_net)} 정산됨`}
                 </Text>
               </View>
               <StatusBadge label={b.label} tone={b.tone} />
@@ -120,36 +123,31 @@ export default function SellScreen() {
         }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListEmptyComponent={<Text style={styles.empty}>아직 올린 기프티콘이 없어요</Text>}
+        contentContainerStyle={[styles.listContent, items.length === 0 && styles.emptyContainer]}
       />
+      {fab}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fafafa' },
+  container: { flex: 1, backgroundColor: colors.bg },
   loading: { marginTop: 40 },
-  newBtn: {
-    margin: 12,
-    backgroundColor: '#e8531f',
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  newBtnText: { color: '#fff', fontWeight: '700', fontSize: 15 },
-  errorBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  retry: { backgroundColor: '#e8531f', borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10 },
-  retryText: { color: '#fff', fontWeight: '700' },
-  empty: { textAlign: 'center', color: '#888', fontSize: 15, marginTop: 40 },
+  listContent: { paddingBottom: FAB_CLEARANCE },
+  emptyContainer: { flexGrow: 1, justifyContent: 'center' },
+  errorBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 },
+  empty: { textAlign: 'center', color: colors.sub, fontSize: 15 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 14,
-    gap: 12,
-    backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    paddingHorizontal: space.screen,
+    paddingVertical: 12,
+    gap: space.gap,
+    backgroundColor: colors.bg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
   },
-  mid: { flex: 1, gap: 2 },
-  name: { fontSize: 16, fontWeight: '700', color: '#222' },
-  meta: { fontSize: 12, color: '#888' },
+  mid: { flex: 1, minWidth: 0, gap: 3 },
+  title: { ...type.rowTitle, color: colors.ink },
+  meta: type.meta,
 });
