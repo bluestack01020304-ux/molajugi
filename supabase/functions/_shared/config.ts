@@ -1,4 +1,4 @@
-import type { Sql } from "postgres";
+import type { Sql } from "npm:postgres@3";
 import type { Probability, Rules } from "./rules.ts";
 
 const KEYS = [

@@ -4,6 +4,7 @@ node_modules/
 .env.*
 
 !supabase/.env.test
+!supabase/.env.local
 app/node_modules/
 app/.expo/
 supabase/.temp/
