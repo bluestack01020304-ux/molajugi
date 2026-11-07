@@ -15,6 +15,8 @@ Deno.test("settle confirm credits seller once", async () => {
   const r = await callFn("settle", b.jwt, { draw_id, action: "confirm" });
   assertEquals([r.status, r.json.status], [200, "confirmed"]);
   assertEquals((await sql`select balance from wallets where user_id=${s.id}`)[0].balance, 900);
+  const tx = await sql`select amount, kind, ref_id from wallet_transactions where user_id=${s.id}`;
+  assertEquals(tx.map((t) => [t.amount, t.kind, t.ref_id]), [[900, "settlement", draw_id]]);
 });
 
 Deno.test("settle_confirm_twice_credits_once", async () => {

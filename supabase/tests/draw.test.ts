@@ -21,6 +21,12 @@ Deno.test("draw miss: buyer pays, seller credited net, listing stays active", as
   assertEquals(w.balance, 900);
   const [st] = await sql`select status, gross, fee, net from settlements where draw_id=${r.json.draw_id}`;
   assertEquals([st.status, st.gross, st.fee, st.net], ["completed", 1000, 100, 900]);
+  const tx = await sql`select user_id, amount, kind, ref_id from wallet_transactions
+                       where user_id in (${b.id}, ${s.id}) order by amount`;
+  assertEquals(tx.map((t) => [t.user_id, t.amount, t.kind, t.ref_id]), [
+    [b.id, -1000, "draw", r.json.draw_id],
+    [s.id, 900, "settlement", r.json.draw_id],
+  ]);
 });
 
 Deno.test("draw win: listing won, settlement held for 3 days, seller not yet paid", async () => {
@@ -33,6 +39,11 @@ Deno.test("draw win: listing won, settlement held for 3 days, seller not yet pai
   assertEquals([st.status, Number(st.secs)], ["held", 3 * 86400]);
   const [w] = await sql`select balance from wallets where user_id=${s.id}`;
   assertEquals(w.balance, 0);
+  assertEquals((await sql`select balance from wallets where user_id=${b.id}`)[0].balance, 4000);
+  assertEquals(r.json.balance, 4000);
+  const btx = await sql`select amount, kind, ref_id from wallet_transactions where user_id=${b.id}`;
+  assertEquals(btx.map((t) => [t.amount, t.kind, t.ref_id]), [[-1000, "draw", r.json.draw_id]]);
+  assertEquals((await sql`select count(*)::int as n from wallet_transactions where user_id=${s.id}`)[0].n, 0);
   const [n] = await sql`select kind from notifications where user_id=${s.id}`;
   assertEquals(n.kind, "draw_win");
 });
