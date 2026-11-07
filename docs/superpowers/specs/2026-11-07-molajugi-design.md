@@ -1,7 +1,7 @@
 # 몰아주기 설계 문서
 
 작성일: 2026-11-07
-상태: 승인됨 (2026-11-07). 구현 계획: `docs/superpowers/plans/2026-11-07-molajugi.md`
+상태: 승인됨 · 구현 완료 (2026-11-07). 구현 계획: `docs/superpowers/plans/2026-11-07-molajugi.md`
 
 ## 1. 한 줄 요약
 
