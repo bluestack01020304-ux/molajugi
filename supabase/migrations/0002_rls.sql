@@ -36,7 +36,12 @@ create policy notifications_update_own on notifications for update to authentica
 create policy listings_select on listings for select to authenticated
   using (status = 'active' or seller_id = auth.uid() or public.is_winner(id));
 create policy listings_withdraw on listings for update to authenticated
-  using (seller_id = auth.uid() and status = 'active') with check (status = 'withdrawn');
+  using (seller_id = auth.uid() and status = 'active')
+  with check (seller_id = auth.uid() and status = 'withdrawn');
+
+-- 판매자는 status 컬럼만 바꿀 수 있다 (seller_id, price 등 다른 컬럼 변경 차단).
+revoke update on public.listings from authenticated;
+grant update (status) on public.listings to authenticated;
 
 create policy listing_secrets_select on listing_secrets for select to authenticated
   using (
