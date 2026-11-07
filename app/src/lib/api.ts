@@ -9,7 +9,8 @@ import type {
   Probability,
   Settlement,
 } from './database.types';
-import { addDays, todayKst } from './format';
+import { MIN_DRAWABLE_DAYS, addDays, todayKst } from './format';
+import { DEFAULT_RULES } from './rules';
 import { supabase } from './supabase';
 
 export class ApiError extends Error {
@@ -25,7 +26,6 @@ export const ERROR_MESSAGES: Record<string, string> = {
   OWN_LISTING: '내가 올린 기프티콘은 뽑을 수 없어요',
   SETTLEMENT_NOT_HELD: '이미 처리된 건이에요',
   NOT_BUYER: '당첨자만 처리할 수 있어요',
-  EXPIRY_TOO_SOON: '유효기간이 2일 이상 남아야 올릴 수 있어요',
   INVALID_PROBABILITY: '확률 보기를 다시 골라 주세요',
   BAD_REQUEST: '입력값을 확인해 주세요',
   UNAUTHORIZED: '다시 로그인해 주세요',
@@ -33,13 +33,18 @@ export const ERROR_MESSAGES: Record<string, string> = {
 
 const DEFAULT_MESSAGE = '잠시 후 다시 시도해 주세요';
 
-export function messageFor(code: string): string {
+/** 오류 코드를 사용자 문구로. 규칙값이 들어가는 문구는 rules(useRules 값)로 만든다. */
+export function messageFor(
+  code: string,
+  rules: { minDaysToList: number } = DEFAULT_RULES,
+): string {
+  if (code === 'EXPIRY_TOO_SOON') return `유효기간이 ${rules.minDaysToList}일 이상 남아야 올릴 수 있어요`;
   return ERROR_MESSAGES[code] ?? DEFAULT_MESSAGE;
 }
 
 export async function fetchActiveListings(category: Category | 'all'): Promise<Listing[]> {
   let q = supabase.from('listings').select('*').eq('status', 'active')
-    .gte('expires_on', addDays(todayKst(), 2));
+    .gte('expires_on', addDays(todayKst(), MIN_DRAWABLE_DAYS));
   if (category !== 'all') q = q.eq('category', category);
   const { data, error } = await q.order('expires_on', { ascending: true });
   if (error) throw error;

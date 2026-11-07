@@ -8,6 +8,13 @@ export function formatWon(n: number): string {
   return `${n.toLocaleString('en-US')}원`;
 }
 
+/**
+ * 뽑을 수 있는 최소 남은 일수. 서버 rules.ts의 shouldDelist(daysLeft <= 1)와 짝이다:
+ * 남은 일수가 이보다 작으면 서버가 뽑기를 거절하므로 목록에서 빼고 상세에서 막는다.
+ * shouldDelist를 바꾸면 이 값도 같이 바꾼다.
+ */
+export const MIN_DRAWABLE_DAYS = 2;
+
 /** 오늘 날짜(KST)를 YYYY-MM-DD로 반환 */
 export function todayKst(): string {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);

@@ -3,12 +3,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { StatusBadge, settlementBadge } from '@/components/StatusBadge';
+import { useRules } from '@/hooks/useRules';
 import { ApiError, fetchWinDetail, messageFor, settle, signedImageUrl } from '@/lib/api';
 
 type Detail = Awaited<ReturnType<typeof fetchWinDetail>>;
 
 export default function GifticonScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { holdDays } = useRules();
   const [detail, setDetail] = useState<Detail | null>(null);
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [imageFailed, setImageFailed] = useState(false);
@@ -104,7 +106,7 @@ export default function GifticonScreen() {
       {settlement.status === 'held' ? (
         <>
           <Text style={styles.notice}>
-            매장에서 사용한 뒤 아래 버튼을 눌러 주세요. 3일 안에 응답이 없으면 정상 사용으로 처리됩니다.
+            {`매장에서 사용한 뒤 아래 버튼을 눌러 주세요. ${holdDays}일 안에 응답이 없으면 정상 사용으로 처리됩니다.`}
           </Text>
           <Pressable
             style={[styles.primary, busy && styles.disabled]}

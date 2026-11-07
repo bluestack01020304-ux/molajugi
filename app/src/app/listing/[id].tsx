@@ -9,6 +9,7 @@ import {
   CATEGORY_EMOJI,
   asCategory,
   daysLeft,
+  MIN_DRAWABLE_DAYS,
   daysLeftLabel, formatPoints,
   formatWon,
 } from '@/lib/format';
@@ -63,7 +64,7 @@ export default function ListingDetailScreen() {
     );
   }
 
-  const undrawable = listing.status !== 'active' || daysLeft(listing.expires_on) <= 1;
+  const undrawable = listing.status !== 'active' || daysLeft(listing.expires_on) < MIN_DRAWABLE_DAYS;
   const insufficient = balance < listing.price;
   const rows: { label: string; value: string; accent?: boolean }[] = [
     { label: '액면가', value: formatWon(listing.face_value) },

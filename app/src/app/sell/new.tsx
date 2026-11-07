@@ -17,9 +17,11 @@ import {
 
 import { CategoryChips } from '@/components/CategoryChips';
 import { PresetPicker } from '@/components/PresetPicker';
+import { useRules } from '@/hooks/useRules';
 import { ApiError, createListing, messageFor, uploadGifticonImage } from '@/lib/api';
 import type { Category, Probability } from '@/lib/database.types';
 import { formatWon, previewPrice } from '@/lib/format';
+import { previewNet } from '@/lib/rules';
 
 function isRealDate(s: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
@@ -29,6 +31,7 @@ function isRealDate(s: string): boolean {
 
 export default function NewListingScreen() {
   const router = useRouter();
+  const rules = useRules();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [category, setCategory] = useState<Category>('cafe');
   const [brand, setBrand] = useState('');
@@ -76,15 +79,15 @@ export default function NewListingScreen() {
       Alert.alert('올렸어요');
       router.back();
     } catch (e) {
-      Alert.alert(messageFor(e instanceof ApiError ? e.code : 'INTERNAL'));
+      Alert.alert(messageFor(e instanceof ApiError ? e.code : 'INTERNAL', rules));
     } finally {
       setBusy(false);
     }
   }
 
   const price = probability !== null && face > 0 ? previewPrice(face, probability) : 0;
-  // 서버 수수료(10%)를 따라 한 표시 전용 계산. 실제 정산액은 서버가 정한다.
-  const net = price - Math.round(price * 0.1);
+  // app_config 수수료율로 한 표시 전용 계산. 실제 정산액은 서버가 정한다.
+  const net = previewNet(price, rules.feeRate);
 
   return (
     <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>

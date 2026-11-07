@@ -15,6 +15,7 @@ import {
 import type { Notification } from '@/lib/database.types';
 import { formatPoints } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
+import { useRules } from '@/hooks/useRules';
 import { useRefreshUnread } from '@/hooks/useUnreadCount';
 import { useWallet } from '@/hooks/useWallet';
 
@@ -41,6 +42,7 @@ async function registerPushToken() {
 
 export default function ProfileScreen() {
   const { balance, refresh } = useWallet();
+  const { topupAmount } = useRules();
   const refreshUnread = useRefreshUnread();
   const [items, setItems] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
@@ -96,7 +98,7 @@ export default function ProfileScreen() {
       <Text style={styles.balance}>{formatPoints(balance)}</Text>
       <View style={styles.btnRow}>
         <Pressable style={[styles.btn, busy && styles.btnDisabled]} disabled={busy} onPress={onTopup}>
-          <Text style={styles.btnText}>충전 (테스트 +10,000P)</Text>
+          <Text style={styles.btnText}>{`충전 (테스트 +${formatPoints(topupAmount)})`}</Text>
         </Pressable>
         <Pressable style={[styles.btn, styles.btnDisabled]} disabled>
           <Text style={styles.btnText}>출금 (준비중)</Text>

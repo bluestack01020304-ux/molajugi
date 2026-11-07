@@ -1,9 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { useRules } from '@/hooks/useRules';
 import type { Probability } from '@/lib/database.types';
 import { formatWon, previewPrice } from '@/lib/format';
-
-const PRESETS: Probability[] = [25, 50, 75];
 
 export function PresetPicker({
   faceValue,
@@ -14,9 +13,10 @@ export function PresetPicker({
   value: Probability | null;
   onChange: (p: Probability) => void;
 }) {
+  const { probabilities } = useRules();
   return (
     <View style={styles.row}>
-      {PRESETS.map((p) => {
+      {probabilities.map((p) => {
         const selected = p === value;
         return (
           <Pressable
