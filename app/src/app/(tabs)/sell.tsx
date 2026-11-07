@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Fab } from '@/components/ui/Fab';
 import { Thumb } from '@/components/ui/Thumb';
 import { ApiError, fetchMyListings, messageFor, withdrawListing, type MyListing } from '@/lib/api';
-import { formatWon } from '@/lib/format';
+import { formatPoints } from '@/lib/format';
 import { colors, space, type } from '@/lib/theme';
 
 const FAB_CLEARANCE = 96;
@@ -114,7 +114,7 @@ export default function SellScreen() {
                   {`${item.brand} ${item.product_name}`}
                 </Text>
                 <Text style={styles.meta} numberOfLines={1}>
-                  {`${item.probability}% · ${item.miss_count}번 꽝 · ${formatWon(item.settled_net)} 정산됨`}
+                  {`${item.probability}% · ${item.miss_count}번 꽝 · ${formatPoints(item.settled_net)} 정산됨`}
                 </Text>
               </View>
               <StatusBadge label={b.label} tone={b.tone} />

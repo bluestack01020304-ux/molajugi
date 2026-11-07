@@ -38,7 +38,13 @@ export function Button({
       {busy ? (
         <ActivityIndicator color={fg} />
       ) : (
-        <Text style={[styles.text, { color: disabled && filled ? colors.bg : fg }]}>{title}</Text>
+        <Text
+          style={[styles.text, { color: disabled && filled ? colors.bg : fg }]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}>
+          {title}
+        </Text>
       )}
     </Pressable>
   );
@@ -52,7 +58,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 16,
   },
-  text: type.button,
+  text: { ...type.button, textAlign: 'center' },
   primary: { backgroundColor: colors.primary },
   soft: { backgroundColor: colors.primarySoft },
   outline: { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.line },
