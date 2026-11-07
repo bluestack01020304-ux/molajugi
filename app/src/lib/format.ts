@@ -20,6 +20,20 @@ export function daysLeftLabel(expiresOn: string, today: string = todayKst()): st
   return '만료';
 }
 
+export const CATEGORIES: readonly Category[] = [
+  'cafe',
+  'convenience',
+  'chicken_pizza',
+  'bakery',
+  'dining',
+  'etc',
+];
+
+/** DB의 category(string)를 Category로 좁힌다. 모르는 값은 'etc'. */
+export function asCategory(s: string): Category {
+  return (CATEGORIES as readonly string[]).includes(s) ? (s as Category) : 'etc';
+}
+
 export const CATEGORY_LABELS: Record<Category, string> = {
   cafe: '카페',
   convenience: '편의점',

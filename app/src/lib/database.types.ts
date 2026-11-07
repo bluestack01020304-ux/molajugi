@@ -351,5 +351,5 @@ export type Draw = Database['public']['Tables']['draws']['Row']
 export type Settlement = Database['public']['Tables']['settlements']['Row']
 export type Notification = Database['public']['Tables']['notifications']['Row']
 export type Wallet = Database['public']['Tables']['wallets']['Row']
-export type Category = Listing['category']
+export type Category = 'cafe' | 'convenience' | 'chicken_pizza' | 'bakery' | 'dining' | 'etc'
 export type Probability = 25 | 50 | 75

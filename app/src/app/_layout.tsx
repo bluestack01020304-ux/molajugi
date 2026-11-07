@@ -1,6 +1,8 @@
 import { Redirect, Stack, usePathname } from 'expo-router';
 
 import { useSession } from '@/hooks/useSession';
+import { NotificationsProvider } from '@/hooks/useUnreadCount';
+import { WalletProvider } from '@/hooks/useWallet';
 
 export default function RootLayout() {
   const { session, loading } = useSession();
@@ -10,9 +12,13 @@ export default function RootLayout() {
   if (!session && pathname !== '/login') return <Redirect href="/login" />;
 
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen name="login" />
-    </Stack>
+    <WalletProvider>
+      <NotificationsProvider>
+        <Stack screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="login" />
+        </Stack>
+      </NotificationsProvider>
+    </WalletProvider>
   );
 }
