@@ -1,18 +1,18 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { Redirect, Stack, usePathname } from 'expo-router';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import AppTabs from '@/components/app-tabs';
+import { useSession } from '@/hooks/useSession';
 
-SplashScreen.preventAutoHideAsync();
+export default function RootLayout() {
+  const { session, loading } = useSession();
+  const pathname = usePathname();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+  if (loading) return null;
+  if (!session && pathname !== '/login') return <Redirect href="/login" />;
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <Stack screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="(tabs)" />
+      <Stack.Screen name="login" />
+    </Stack>
   );
 }
