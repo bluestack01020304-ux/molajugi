@@ -14,10 +14,16 @@ async function parseBody(req: Request): Promise<string> {
   return id;
 }
 
-// 테스트 전용 롤 고정: env로 허용된 경우에만, 유한한 [0,1) 값일 때만 사용한다.
+// 호스팅(supabase.co) 런타임에서는 env 플래그가 실수로 켜져 있어도 디버그 롤을 절대 받지 않는다.
+function debugRollAllowed(): boolean {
+  const url = Deno.env.get("SUPABASE_URL") ?? "";
+  return Deno.env.get("ALLOW_DEBUG_ROLL") === "true" && !url.includes("supabase.co");
+}
+
+// 테스트 전용 롤 고정: env로 허용되고 로컬 런타임일 때만, 유한한 [0,1) 값일 때만 사용한다.
 function pickRandom(req: Request): number {
   const debug = req.headers.get("x-debug-roll");
-  if (Deno.env.get("ALLOW_DEBUG_ROLL") === "true" && debug !== null) {
+  if (debug !== null && debugRollAllowed()) {
     const v = Number(debug);
     if (debug.trim() !== "" && Number.isFinite(v) && v >= 0 && v < 1) return v;
   }

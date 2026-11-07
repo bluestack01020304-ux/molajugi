@@ -12,6 +12,9 @@ const isRealDate = (s: string) => {
   return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
 };
 
+// int4 범위 안에서 넉넉한 상한. 이보다 크면 가격 계산·잔액 합산이 넘칠 수 있다.
+const MAX_FACE_VALUE = 2_000_000_000;
+
 const isStr = (v: unknown): v is string => typeof v === "string" && v.trim() !== "";
 
 Deno.serve(handle(async (req) => {
@@ -21,7 +24,7 @@ Deno.serve(handle(async (req) => {
   const { category, brand, product_name, face_value, expires_on, probability, image_path, barcode_number } = b;
   if (
     !CATEGORIES.includes(category) || !isStr(brand) || !isStr(product_name) ||
-    !Number.isInteger(face_value) || face_value <= 0 ||
+    !Number.isInteger(face_value) || face_value <= 0 || face_value > MAX_FACE_VALUE ||
     typeof expires_on !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(expires_on) || !isRealDate(expires_on) ||
     typeof probability !== "number" || !isStr(image_path) ||
     (barcode_number != null && typeof barcode_number !== "string")
@@ -37,6 +40,8 @@ Deno.serve(handle(async (req) => {
   ) throw new HttpError(400, "BAD_REQUEST");
 
   const price = calcPrice(face_value, probability as Probability);
+  // 10원 단위 반올림으로 가격이 0이 되는 아주 작은 액면가는 받지 않는다.
+  if (price <= 0) throw new HttpError(400, "BAD_REQUEST");
   const barcode = barcode_number?.trim() || null;
   const id = await sql.begin(async (tx) => {
     const [l] = await tx`

@@ -1,5 +1,8 @@
 {
-  "tasks": { "test": "deno test -A --env-file=.env.test tests/" },
+  "tasks": {
+    "test": "deno test -A --env-file=.env.test tests/",
+    "daily": "deno run -A --env-file=.env.test tests/run-daily.ts"
+  },
   "imports": {
     "@supabase/supabase-js": "npm:@supabase/supabase-js@2",
     "postgres": "npm:postgres@3",

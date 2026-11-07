@@ -5,6 +5,7 @@ node_modules/
 
 !supabase/.env.test
 !supabase/.env.local
+!supabase/.env.debug
 !app/.env.example
 app/node_modules/
 app/.expo/

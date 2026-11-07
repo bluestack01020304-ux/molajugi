@@ -33,3 +33,11 @@ Deno.test("create-listing rejects image_path escaping the user folder", async ()
     assertEquals([r.status, r.json.error], [400, "BAD_REQUEST"], p);
   }
 });
+Deno.test("create-listing rejects face_value whose price rounds to 0 or exceeds the cap", async () => {
+  const s = await createUser("s");
+  // 10 × 25% = 2.5원 → 10원 단위 반올림 0원
+  const tiny = await callFn("create-listing", s.jwt, body(s.id, { face_value: 10, probability: 25 }));
+  assertEquals([tiny.status, tiny.json.error], [400, "BAD_REQUEST"]);
+  const huge = await callFn("create-listing", s.jwt, body(s.id, { face_value: 2_000_000_001 }));
+  assertEquals([huge.status, huge.json.error], [400, "BAD_REQUEST"]);
+});

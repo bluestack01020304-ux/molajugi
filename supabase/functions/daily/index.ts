@@ -32,10 +32,15 @@ Deno.serve(handle(async (req) => {
 
     const due = await tx`
       select id, seller_id, draw_id, net
-      from settlements where status = 'held' and release_at <= now() for update`;
+      from settlements where status = 'held' and release_at <= now()
+      order by seller_id for update`;
+    // 관련 판매자 지갑을 한 문장에서 user_id 순으로 잠근다 (draw와 같은 잠금 순서 → 데드락 방지).
+    const sellerIds = [...new Set(due.map((st) => st.seller_id as string))];
+    if (sellerIds.length > 0) {
+      await tx`select user_id from wallets where user_id = any(${sellerIds}::uuid[]) order by user_id for update`;
+    }
     for (const st of due) {
       await tx`update settlements set status = 'auto_released', resolved_at = now() where id = ${st.id}`;
-      await tx`select 1 from wallets where user_id = ${st.seller_id} for update`;
       await tx`update wallets set balance = balance + ${st.net} where user_id = ${st.seller_id}`;
       await tx`insert into wallet_transactions (user_id, amount, kind, ref_id)
                values (${st.seller_id}, ${st.net}, 'settlement', ${st.draw_id})`;
