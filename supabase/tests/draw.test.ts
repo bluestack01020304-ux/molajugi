@@ -71,3 +71,22 @@ Deno.test("draw_concurrent_two_buyers_only_one_wins", async () => {
   assertEquals(results, ["LISTING_NOT_ACTIVE", "win"]);
   assertEquals((await sql`select count(*)::int as c from draws where listing_id=${id}`)[0].c, 1);
 });
+
+// 교차 거래(A가 B의 상품, B가 A의 상품을 동시에 뽑기): 지갑 잠금 순서가 고정이어야 데드락이 없다.
+// 경합을 결정적으로 재현하지는 못하지만 시나리오를 문서화하고 둘 다 성공함을 확인한다.
+Deno.test("draw_mutual_trade_no_deadlock", async () => {
+  const a = await createUser("a");
+  const b = await createUser("b");
+  await setBalance(a.id, 5000);
+  await setBalance(b.id, 5000);
+  const l1 = await insertListing(a.id, {});
+  const l2 = await insertListing(b.id, {});
+  const [r1, r2] = await Promise.all([
+    callFn("draw", b.jwt, { listing_id: l1 }, roll(0.9)),
+    callFn("draw", a.jwt, { listing_id: l2 }, roll(0.9)),
+  ]);
+  assertEquals([r1.status, r1.json.result, r2.status, r2.json.result], [200, "miss", 200, "miss"]);
+  // 각자 5000 - 1000(구매) + 900(판매 정산)
+  assertEquals((await sql`select balance from wallets where user_id=${a.id}`)[0].balance, 4900);
+  assertEquals((await sql`select balance from wallets where user_id=${b.id}`)[0].balance, 4900);
+});

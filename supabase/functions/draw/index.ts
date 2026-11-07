@@ -40,20 +40,23 @@ Deno.serve(handle(async (req) => {
     }
     if (l.seller_id === userId) throw new HttpError(403, "OWN_LISTING");
 
-    // 2. 구매자 지갑 잠금 + 잔액 확인
-    const [w] = await tx`select balance from wallets where user_id = ${userId} for update`;
+    // 2. 구매자·판매자 지갑을 한 문장에서 고정 순서(user_id)로 잠금 (교차 거래 데드락 방지) + 잔액 확인
+    const wallets = await tx`
+      select user_id, balance from wallets
+      where user_id in (${userId}, ${l.seller_id}) order by user_id for update`;
+    const w = wallets.find((x) => x.user_id === userId);
     if (!w || w.balance < l.price) throw new HttpError(402, "INSUFFICIENT_BALANCE");
 
-    // 4. 결과 결정 (서버에서만)
+    // 3. 결과 결정 (서버에서만)
     const result = rollOutcome(l.probability, random);
 
-    // 5. draws 기록 (3번의 ref_id로 쓰기 위해 차감보다 먼저)
+    // 4. draws 기록 (차감 거래의 ref_id로 쓰기 위해 차감보다 먼저)
     const [d] = await tx`
       insert into draws (listing_id, buyer_id, amount, result)
       values (${l.id}, ${userId}, ${l.price}, ${result}) returning id`;
     const { fee, net } = splitFee(l.price, rules.feeRate);
 
-    // 3. 구매자 차감 + 거래 내역
+    // 5. 구매자 차감 + 거래 내역
     const [bw] = await tx`
       update wallets set balance = balance - ${l.price} where user_id = ${userId} returning balance`;
     await tx`insert into wallet_transactions (user_id, amount, kind, ref_id)
@@ -64,7 +67,6 @@ Deno.serve(handle(async (req) => {
       await tx`update listings set miss_count = miss_count + 1 where id = ${l.id}`;
       await tx`insert into settlements (draw_id, seller_id, buyer_id, gross, fee, net, status)
                values (${d.id}, ${l.seller_id}, ${userId}, ${l.price}, ${fee}, ${net}, 'completed')`;
-      await tx`select 1 from wallets where user_id = ${l.seller_id} for update`;
       await tx`update wallets set balance = balance + ${net} where user_id = ${l.seller_id}`;
       await tx`insert into wallet_transactions (user_id, amount, kind, ref_id)
                values (${l.seller_id}, ${net}, 'settlement', ${d.id})`;
