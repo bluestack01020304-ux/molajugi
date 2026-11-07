@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Dimensions, PanResponder, StyleSheet, Text, View } from 'react-native';
 
 import { GRID, cellIndexAt, isRevealComplete } from '@/lib/scratch';
+import { colors, radius, type } from '@/lib/theme';
 
 const AUTO_REVEAL_MS = 10_000;
 const TOTAL = GRID.cols * GRID.rows;
@@ -79,7 +80,7 @@ export function ScratchCard({ result, onRevealed }: Props) {
                     top: Math.floor(i / GRID.cols) * cellH,
                     width: cellW - 1,
                     height: cellH - 1,
-                    backgroundColor: '#b9b9b9',
+                    backgroundColor: (i + Math.floor(i / GRID.cols)) % 2 === 0 ? colors.coatA : colors.coatB,
                   }}
                 />
               ),
@@ -93,17 +94,15 @@ export function ScratchCard({ result, onRevealed }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', gap: 8 },
-  hint: { fontSize: 14, color: '#666' },
+  hint: { ...type.meta, fontSize: 14 },
   card: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e5e5e5',
-    borderRadius: 8,
+    backgroundColor: colors.bg2,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
   },
-  result: { fontSize: 44, fontWeight: '800' },
-  win: { color: '#e8531f' },
-  miss: { color: '#888' },
+  result: { fontSize: 44, fontWeight: '900' },
+  win: { color: colors.primary },
+  miss: { color: colors.sub, fontWeight: '800' },
 });

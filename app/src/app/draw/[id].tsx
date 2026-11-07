@@ -1,8 +1,10 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { ScratchCard } from '@/components/ScratchCard';
+import { Button } from '@/components/ui/Button';
+import { colors, space, type } from '@/lib/theme';
 
 export default function DrawResultScreen() {
   const { id, result, listing_id } = useLocalSearchParams<{
@@ -17,9 +19,7 @@ export default function DrawResultScreen() {
       <View style={styles.center}>
         <Stack.Screen options={{ title: '뽑기 결과', headerBackVisible: false }} />
         <Text style={styles.muted}>결과를 불러올 수 없어요</Text>
-        <Pressable style={styles.secondary} onPress={() => router.replace('/(tabs)')}>
-          <Text style={styles.secondaryText}>목록으로</Text>
-        </Pressable>
+        <Button variant="outline" title="목록으로" onPress={() => router.replace('/(tabs)')} />
       </View>
     );
   }
@@ -28,27 +28,27 @@ export default function DrawResultScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ title: '뽑기 결과', headerBackVisible: false }} />
       <ScratchCard result={result} onRevealed={() => setRevealed(true)} />
+      {!revealed && <Button variant="outline" title="긁는 중…" disabled />}
       {revealed && result === 'win' && (
         <View style={styles.actions}>
-          <Text style={styles.winTitle}>🎉 당첨!</Text>
-          <Pressable
-            style={styles.primary}
-            onPress={() => router.replace({ pathname: '/gifticon/[id]', params: { id } })}>
-            <Text style={styles.primaryText}>바코드 보기</Text>
-          </Pressable>
+          <Text style={styles.burst}>🎉</Text>
+          <Text style={styles.winTitle}>당첨!</Text>
+          <Button
+            title="바코드 보기"
+            onPress={() => router.replace({ pathname: '/gifticon/[id]', params: { id } })}
+          />
         </View>
       )}
       {revealed && result === 'miss' && (
         <View style={styles.actions}>
-          <Text style={styles.missTitle}>아쉽네요, 꽝이에요</Text>
-          <Pressable
-            style={styles.primary}
-            onPress={() => router.replace({ pathname: '/listing/[id]', params: { id: listing_id } })}>
-            <Text style={styles.primaryText}>같은 기프티콘 다시 뽑기</Text>
-          </Pressable>
-          <Pressable style={styles.secondary} onPress={() => router.replace('/(tabs)')}>
-            <Text style={styles.secondaryText}>목록으로</Text>
-          </Pressable>
+          <Text style={styles.missTitle}>꽝</Text>
+          <Text style={styles.missSub}>아쉽네요, 꽝이에요</Text>
+          <Button
+            variant="soft"
+            title="같은 기프티콘 다시 뽑기"
+            onPress={() => router.replace({ pathname: '/listing/[id]', params: { id: listing_id } })}
+          />
+          <Button variant="outline" title="목록으로" onPress={() => router.replace('/(tabs)')} />
         </View>
       )}
     </View>
@@ -56,28 +56,19 @@ export default function DrawResultScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fafafa', padding: 16, gap: 16 },
+  container: { flex: 1, backgroundColor: colors.bg, padding: space.screen, gap: space.screen },
   center: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
-    backgroundColor: '#fafafa',
+    gap: space.screen,
+    backgroundColor: colors.bg,
+    padding: space.screen,
   },
-  muted: { color: '#888', fontSize: 15 },
-  actions: { gap: 8 },
-  winTitle: { fontSize: 28, fontWeight: '800', color: '#e8531f', textAlign: 'center' },
-  missTitle: { fontSize: 20, fontWeight: '700', color: '#444', textAlign: 'center' },
-  primary: { backgroundColor: '#e8531f', borderRadius: 8, padding: 14, alignItems: 'center' },
-  primaryText: { color: '#fff', fontSize: 16, fontWeight: '700' },
-  secondary: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 14,
-    paddingHorizontal: 24,
-    alignItems: 'center',
-  },
-  secondaryText: { color: '#444', fontSize: 16, fontWeight: '600' },
+  muted: { color: colors.sub, fontSize: 15 },
+  actions: { gap: 10, alignItems: 'stretch' },
+  burst: { fontSize: 54, textAlign: 'center' },
+  winTitle: { fontSize: 34, fontWeight: '900', color: colors.primary, textAlign: 'center' },
+  missTitle: { fontSize: 28, fontWeight: '800', color: colors.sub, textAlign: 'center' },
+  missSub: { ...type.meta, textAlign: 'center', marginBottom: 4 },
 });
