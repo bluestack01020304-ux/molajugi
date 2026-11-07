@@ -1,5 +1,7 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { daysLeft } from '@/lib/format';
+
 export type Tone = 'live' | 'hold' | 'ok' | 'warn' | 'muted';
 
 const COLORS: Record<Tone, { bg: string; fg: string }> = {
@@ -23,6 +25,29 @@ export function settlementBadge(status: string): { label: string; tone: Tone } {
       return { label: '환불됨', tone: 'muted' };
     default:
       return { label: status, tone: 'muted' };
+  }
+}
+
+export function listingBadge(row: {
+  status: string;
+  expires_on: string;
+  settlement_status?: string | null;
+}): { label: string; tone: Tone } {
+  switch (row.status) {
+    case 'active':
+      return daysLeft(row.expires_on) <= 7
+        ? { label: '만료 임박', tone: 'warn' }
+        : { label: '판매중', tone: 'live' };
+    case 'won':
+      return row.settlement_status === 'held' || row.settlement_status === 'disputed'
+        ? { label: '정산 대기', tone: 'hold' }
+        : { label: '당첨 완료', tone: 'ok' };
+    case 'withdrawn':
+      return { label: '내림', tone: 'muted' };
+    case 'expired':
+      return { label: '만료', tone: 'muted' };
+    default:
+      return { label: row.status, tone: 'muted' };
   }
 }
 

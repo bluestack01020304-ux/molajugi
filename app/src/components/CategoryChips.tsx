@@ -5,9 +5,17 @@ import { CATEGORIES, CATEGORY_LABELS } from '@/lib/format';
 
 type Value = Category | 'all';
 
-export function CategoryChips({ value, onChange }: { value: Value; onChange: (v: Value) => void }) {
+export function CategoryChips({
+  value,
+  onChange,
+  includeAll = true,
+}: {
+  value: Value;
+  onChange: (v: Value) => void;
+  includeAll?: boolean;
+}) {
   const items: { key: Value; label: string }[] = [
-    { key: 'all', label: '전체' },
+    ...(includeAll ? [{ key: 'all' as Value, label: '전체' }] : []),
     ...CATEGORIES.map((c) => ({ key: c as Value, label: CATEGORY_LABELS[c] })),
   ];
   return (

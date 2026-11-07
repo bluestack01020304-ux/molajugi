@@ -23,6 +23,10 @@ export default function RootLayout() {
             name="gifticon/[id]"
             options={{ headerShown: true, presentation: 'card', title: '당첨 기프티콘' }}
           />
+          <Stack.Screen
+            name="sell/new"
+            options={{ headerShown: true, presentation: 'card', title: '기프티콘 올리기' }}
+          />
         </Stack>
       </NotificationsProvider>
     </WalletProvider>
