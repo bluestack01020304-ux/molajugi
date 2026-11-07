@@ -1,11 +1,16 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
 import { CategoryChips } from '@/components/CategoryChips';
 import { ListingRow } from '@/components/ListingRow';
+import { Button } from '@/components/ui/Button';
+import { Fab } from '@/components/ui/Fab';
 import { fetchActiveListings } from '@/lib/api';
 import type { Category, Listing } from '@/lib/database.types';
+import { colors, type } from '@/lib/theme';
+
+const FAB_CLEARANCE = 96;
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -55,18 +60,18 @@ export default function HomeScreen() {
         }}
       />
       {loading ? (
-        <ActivityIndicator style={styles.loading} color="#e8531f" />
+        <ActivityIndicator style={styles.loading} color={colors.primary} />
       ) : error ? (
         <View style={styles.errorBox}>
           <Text style={styles.empty}>목록을 불러오지 못했어요</Text>
-          <Pressable
-            style={styles.retry}
+          <Button
+            variant="soft"
+            title="다시 시도"
             onPress={() => {
               setLoading(true);
               load();
-            }}>
-            <Text style={styles.retryText}>다시 시도</Text>
-          </Pressable>
+            }}
+          />
         </View>
       ) : (
         <FlatList
@@ -77,19 +82,19 @@ export default function HomeScreen() {
           )}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={<Text style={styles.empty}>아직 올라온 기프티콘이 없어요</Text>}
-          contentContainerStyle={items.length === 0 && styles.emptyContainer}
+          contentContainerStyle={[styles.listContent, items.length === 0 && styles.emptyContainer]}
         />
       )}
+      <Fab onPress={() => router.push('/sell/new')} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fafafa' },
+  container: { flex: 1, backgroundColor: colors.bg },
   loading: { marginTop: 40 },
+  listContent: { paddingBottom: FAB_CLEARANCE },
   emptyContainer: { flexGrow: 1, justifyContent: 'center' },
-  errorBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 },
-  retry: { backgroundColor: '#e8531f', borderRadius: 8, paddingHorizontal: 20, paddingVertical: 10 },
-  retryText: { color: '#fff', fontWeight: '700' },
-  empty: { textAlign: 'center', color: '#888', fontSize: 15 },
+  errorBox: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12, paddingHorizontal: 32 },
+  empty: { ...type.body, textAlign: 'center', color: colors.sub, fontSize: 15 },
 });
