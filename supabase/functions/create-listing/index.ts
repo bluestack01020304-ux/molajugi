@@ -6,6 +6,12 @@ import { calcPrice, canList, todayKst, type Probability } from "../_shared/rules
 
 const CATEGORIES = ["cafe", "convenience", "chicken_pizza", "bakery", "dining", "etc"];
 
+const isRealDate = (s: string) => {
+  const [y, m, d] = s.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return dt.getUTCFullYear() === y && dt.getUTCMonth() === m - 1 && dt.getUTCDate() === d;
+};
+
 const isStr = (v: unknown): v is string => typeof v === "string" && v.trim() !== "";
 
 Deno.serve(handle(async (req) => {
@@ -16,7 +22,7 @@ Deno.serve(handle(async (req) => {
   if (
     !CATEGORIES.includes(category) || !isStr(brand) || !isStr(product_name) ||
     !Number.isInteger(face_value) || face_value <= 0 ||
-    typeof expires_on !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(expires_on) ||
+    typeof expires_on !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(expires_on) || !isRealDate(expires_on) ||
     typeof probability !== "number" || !isStr(image_path) ||
     (barcode_number != null && typeof barcode_number !== "string")
   ) throw new HttpError(400, "BAD_REQUEST");
@@ -24,7 +30,11 @@ Deno.serve(handle(async (req) => {
   const rules = await loadRules(sql);
   if (!rules.probabilities.includes(probability as Probability)) throw new HttpError(400, "INVALID_PROBABILITY");
   if (!canList(expires_on, todayKst(), rules)) throw new HttpError(400, "EXPIRY_TOO_SOON");
-  if (!image_path.startsWith(`${userId}/`)) throw new HttpError(400, "BAD_REQUEST");
+  const parts = image_path.split("/");
+  if (
+    parts.length !== 2 || parts[0] !== userId || parts[1] === "" || parts[1] === ".." || parts[1] === "." ||
+    image_path.includes("\\") || !/\.(jpe?g|png)$/i.test(parts[1])
+  ) throw new HttpError(400, "BAD_REQUEST");
 
   const price = calcPrice(face_value, probability as Probability);
   const barcode = barcode_number?.trim() || null;

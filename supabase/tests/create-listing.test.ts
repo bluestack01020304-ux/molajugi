@@ -19,3 +19,17 @@ Deno.test("create-listing rejects probability 30 and foreign image path", async 
   assertEquals((await callFn("create-listing", s.jwt, body(s.id, { probability: 30 }))).json.error, "INVALID_PROBABILITY");
   assertEquals((await callFn("create-listing", s.jwt, body(s.id, { image_path: "other/x.jpg" }))).json.error, "BAD_REQUEST");
 });
+Deno.test("create-listing rejects impossible calendar date", async () => {
+  const s = await createUser("s");
+  for (const d of ["2026-02-30", "2026-13-45"]) {
+    const r = await callFn("create-listing", s.jwt, body(s.id, { expires_on: d }));
+    assertEquals([r.status, r.json.error], [400, "BAD_REQUEST"]);
+  }
+});
+Deno.test("create-listing rejects image_path escaping the user folder", async () => {
+  const s = await createUser("s");
+  for (const p of [`${s.id}/../other/x.jpg`, `${s.id}//x.jpg`, `${s.id}/x.txt`, `${s.id}/xjpg`, `${s.id}\\x.jpg`, `${s.id}/a/x.jpg`]) {
+    const r = await callFn("create-listing", s.jwt, body(s.id, { image_path: p }));
+    assertEquals([r.status, r.json.error], [400, "BAD_REQUEST"], p);
+  }
+});
