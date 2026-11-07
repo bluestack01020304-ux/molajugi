@@ -1,0 +1,6 @@
+# 몰아주기
+
+- 준비물: Docker Desktop(필수, 실행 중이어야 함), Supabase CLI, Deno 2.x, Node 20+
+- 로컬 백엔드: `supabase start` (API http://127.0.0.1:54321, DB postgresql://postgres:postgres@127.0.0.1:54322/postgres)
+- 앱: `cd app && npx expo start`
+- 백엔드 테스트: `cd supabase && deno task test` (`supabase/.env.test`를 `supabase status` 값으로 채워야 함)
