@@ -11,6 +11,20 @@ export const sql = postgres(Deno.env.get("DB_URL")!);
 await sql`select 1`; // connect at import time (outside any test) so sanitizers stay quiet
 globalThis.addEventListener("unload", () => { sql.end({ timeout: 5 }); });
 
+// 테스트가 만든 일회용 유저(`<prefix>-<uuid>@test.local`)의 활성 매물을 내린다.
+// 테스트 DB를 앱 데모와 같이 쓰므로, 지난 실행이 남긴 매물이 뽑기 목록에 섞이지 않게 한다.
+export async function withdrawTestListings(): Promise<number> {
+  const rows = await sql`
+    update listings set status = 'withdrawn'
+    where status = 'active'
+      and seller_id in (
+        select id from auth.users where email ~ '^[a-z0-9]+-[0-9a-f-]{36}@test\\.local$'
+      )
+    returning id`;
+  return rows.length;
+}
+await withdrawTestListings(); // 지난 실행의 잔여물 정리
+
 export async function ensureUser(
   email: string,
   password = "test1234",

@@ -70,6 +70,8 @@ deno run -A --env-file=.env.test tests/seed.ts
 
 `seller@test.local` / `buyer@test.local`(비밀번호 `test1234`, 잔액 각 20,000P)을 만들고 카테고리별 매물 6건을 올린다. 판매자에게 매물이 이미 있으면 매물 생성은 건너뛴다(여러 번 돌려도 중복 없음). 처음부터 다시 하려면 `db reset` 후 재실행.
 
+자동 테스트(`deno task test`)는 같은 로컬 DB에 일회용 판매자의 매물을 만든다. 테스트 실행 시작 시와 시드 실행 시 그 잔여 매물을 자동으로 내리므로, 테스트를 돌린 뒤 폰에서 보려면 시드를 한 번 더 돌리면 된다.
+
 ## 5. 앱 실행
 
 1. `app/.env.example`을 `app/.env`로 복사한다.

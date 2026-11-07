@@ -1,6 +1,7 @@
+import DateTimePicker, { DateTimePickerAndroid } from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -29,6 +30,18 @@ function isRealDate(s: string): boolean {
   return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
 }
 
+// 폰의 로컬 날짜를 YYYY-MM-DD로. 서버는 KST 기준이고 폰도 한국이라는 전제.
+function toYmd(d: Date): string {
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${d.getFullYear()}-${m}-${day}`;
+}
+
+function fromYmd(s: string): Date {
+  const [y, m, d] = s.split('-').map(Number);
+  return new Date(y, m - 1, d);
+}
+
 export default function NewListingScreen() {
   const router = useRouter();
   const rules = useRules();
@@ -41,6 +54,31 @@ export default function NewListingScreen() {
   const [barcode, setBarcode] = useState('');
   const [probability, setProbability] = useState<Probability | null>(null);
   const [busy, setBusy] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // 서버 규칙(min_days_to_list)보다 가까운 날짜는 고를 수 없게 한다.
+  const minDate = useMemo(() => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + rules.minDaysToList);
+    return d;
+  }, [rules.minDaysToList]);
+
+  function openDatePicker() {
+    const value = isRealDate(expiresOn) ? fromYmd(expiresOn) : minDate;
+    if (Platform.OS === 'android') {
+      DateTimePickerAndroid.open({
+        value,
+        mode: 'date',
+        minimumDate: minDate,
+        onChange: (event, date) => {
+          if (event.type === 'set' && date) setExpiresOn(toYmd(date));
+        },
+      });
+    } else {
+      setShowDatePicker(true);
+    }
+  }
 
   const face = faceText ? Number(faceText) : 0;
   const valid =
@@ -133,16 +171,27 @@ export default function NewListingScreen() {
         />
 
         <Text style={styles.label}>유효기간</Text>
-        <TextInput
-          style={styles.input}
-          value={expiresOn}
-          onChangeText={setExpiresOn}
-          placeholder="YYYY-MM-DD"
-          autoCapitalize="none"
-          keyboardType="numbers-and-punctuation"
-        />
-        {expiresOn.length > 0 && !isRealDate(expiresOn) && (
-          <Text style={styles.warn}>YYYY-MM-DD 형식으로 입력해 주세요</Text>
+        <Pressable style={styles.input} onPress={openDatePicker}>
+          <Text style={expiresOn ? styles.inputText : styles.placeholder}>
+            {expiresOn || '날짜 선택'}
+          </Text>
+        </Pressable>
+        {showDatePicker && Platform.OS !== 'android' && (
+          <View style={styles.pickerBox}>
+            <DateTimePicker
+              value={isRealDate(expiresOn) ? fromYmd(expiresOn) : minDate}
+              mode="date"
+              display="spinner"
+              minimumDate={minDate}
+              locale="ko-KR"
+              onChange={(_event, date) => {
+                if (date) setExpiresOn(toYmd(date));
+              }}
+            />
+            <Pressable style={styles.pickerDone} onPress={() => setShowDatePicker(false)}>
+              <Text style={styles.pickerDoneText}>완료</Text>
+            </Pressable>
+          </View>
         )}
 
         <Text style={styles.label}>바코드 번호 (선택)</Text>
@@ -197,6 +246,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     fontSize: 16,
   },
+  inputText: { fontSize: 16, color: '#222' },
+  placeholder: { fontSize: 16, color: '#999' },
+  pickerBox: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    backgroundColor: '#fff',
+    marginTop: 6,
+    alignItems: 'center',
+  },
+  pickerDone: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: 10 },
+  pickerDoneText: { color: '#e8531f', fontSize: 16, fontWeight: '700' },
   warn: { color: '#c0392b', fontSize: 12 },
   explain: { marginTop: 8, fontSize: 14, color: '#444' },
   footer: {
