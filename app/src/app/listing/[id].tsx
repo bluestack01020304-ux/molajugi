@@ -1,9 +1,9 @@
-import { Stack, useLocalSearchParams } from 'expo-router';
+import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useWallet } from '@/hooks/useWallet';
-import { fetchListing } from '@/lib/api';
+import { ApiError, draw, fetchListing, messageFor } from '@/lib/api';
 import type { Listing } from '@/lib/database.types';
 import {
   CATEGORY_EMOJI,
@@ -15,9 +15,10 @@ import {
 
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { balance } = useWallet();
+  const { balance, refresh } = useWallet();
   const [listing, setListing] = useState<Listing | null>(null);
   const [failed, setFailed] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -28,6 +29,26 @@ export default function ListingDetailScreen() {
       active = false;
     };
   }, [id]);
+
+  const onDraw = async () => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await draw(id);
+      await refresh();
+      router.replace({
+        pathname: '/draw/[id]',
+        params: { id: r.draw_id, result: r.result, listing_id: id },
+      });
+    } catch (e) {
+      const code = e instanceof ApiError ? e.code : 'INTERNAL';
+      Alert.alert('뽑기 실패', messageFor(code));
+      if (code === 'LISTING_NOT_ACTIVE') {
+        fetchListing(id).then(setListing).catch(() => {});
+      }
+      setBusy(false);
+    }
+  };
 
   if (!listing) {
     return (
@@ -77,11 +98,9 @@ export default function ListingDetailScreen() {
           <Text style={styles.warn}>포인트가 부족해요. 내 정보에서 충전하세요</Text>
         )}
         <Pressable
-          style={[styles.button, (undrawable || insufficient) && styles.buttonDisabled]}
-          disabled={undrawable || insufficient}
-          onPress={() => {
-            // TODO(Task 12): draw 호출
-          }}>
+          style={[styles.button, (undrawable || insufficient || busy) && styles.buttonDisabled]}
+          disabled={undrawable || insufficient || busy}
+          onPress={onDraw}>
           <Text style={styles.buttonText}>{undrawable
             ? '지금은 뽑을 수 없는 기프티콘이에요'
             : `${formatPoints(listing.price)}로 뽑기`}</Text>

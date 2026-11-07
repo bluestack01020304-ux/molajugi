@@ -64,3 +64,9 @@ export async function invoke<T>(name: string, body: unknown): Promise<T> {
   }
   return data as T;
 }
+
+export async function draw(
+  listingId: string,
+): Promise<{ draw_id: string; result: 'win' | 'miss'; balance: number }> {
+  return invoke('draw', { listing_id: listingId });
+}

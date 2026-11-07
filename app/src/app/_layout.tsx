@@ -18,6 +18,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="login" />
           <Stack.Screen name="listing/[id]" options={{ headerShown: true, presentation: 'card' }} />
+          <Stack.Screen name="draw/[id]" options={{ headerShown: true, presentation: 'card' }} />
         </Stack>
       </NotificationsProvider>
     </WalletProvider>
