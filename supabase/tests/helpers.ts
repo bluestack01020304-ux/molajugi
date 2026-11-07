@@ -11,22 +11,23 @@ export const sql = postgres(Deno.env.get("DB_URL")!);
 await sql`select 1`; // connect at import time (outside any test) so sanitizers stay quiet
 globalThis.addEventListener("unload", () => { sql.end({ timeout: 5 }); });
 
-export async function createUser(
-  prefix: string,
+export async function ensureUser(
+  email: string,
+  password = "test1234",
 ): Promise<{ id: string; jwt: string; client: SupabaseClient }> {
   const admin = createClient(SUPABASE_URL, SERVICE_KEY, authOpts);
-  const email = `${prefix}-${crypto.randomUUID()}@test.local`;
-  const password = "test1234";
-  const { data: created, error: cErr } = await admin.auth.admin.createUser({
-    email,
-    password,
-    email_confirm: true,
-  });
-  if (cErr) throw cErr;
+  const { error: cErr } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
+  if (cErr && !/already|registered|exists/i.test(cErr.message)) throw cErr;
   const client = createClient(SUPABASE_URL, ANON_KEY, authOpts);
   const { data: signed, error: sErr } = await client.auth.signInWithPassword({ email, password });
   if (sErr) throw sErr;
-  return { id: created.user.id, jwt: signed.session!.access_token, client };
+  return { id: signed.user!.id, jwt: signed.session!.access_token, client };
+}
+
+export function createUser(
+  prefix: string,
+): Promise<{ id: string; jwt: string; client: SupabaseClient }> {
+  return ensureUser(`${prefix}-${crypto.randomUUID()}@test.local`);
 }
 
 export async function callFn(
