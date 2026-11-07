@@ -4,6 +4,8 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import { Button } from '@/components/ui/Button';
+import { colors, space, type } from '@/lib/theme';
 import {
   ApiError,
   fetchNotifications,
@@ -97,12 +99,13 @@ export default function ProfileScreen() {
       <Text style={styles.balanceLabel}>내 포인트</Text>
       <Text style={styles.balance}>{formatPoints(balance)}</Text>
       <View style={styles.btnRow}>
-        <Pressable style={[styles.btn, busy && styles.btnDisabled]} disabled={busy} onPress={onTopup}>
-          <Text style={styles.btnText}>{`충전 (테스트 +${formatPoints(topupAmount)})`}</Text>
-        </Pressable>
-        <Pressable style={[styles.btn, styles.btnDisabled]} disabled>
-          <Text style={styles.btnText}>출금 (준비중)</Text>
-        </Pressable>
+        <Button
+          style={styles.btn}
+          title={`충전 (테스트 +${formatPoints(topupAmount)})`}
+          busy={busy}
+          onPress={onTopup}
+        />
+        <Button style={styles.btn} title="출금 (준비중)" disabled />
       </View>
       <Pressable style={styles.logout} onPress={() => supabase.auth.signOut()}>
         <Text style={styles.logoutText}>로그아웃</Text>
@@ -135,26 +138,25 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#fafafa' },
-  header: { backgroundColor: '#fff', padding: 16, gap: 10 },
-  balanceLabel: { color: '#888', fontSize: 13 },
-  balance: { fontSize: 36, fontWeight: '800', color: '#222' },
+  container: { flex: 1, backgroundColor: colors.bg },
+  header: { backgroundColor: colors.bg, padding: space.screen, gap: 10 },
+  balanceLabel: type.label,
+  balance: { fontSize: 36, fontWeight: '800', color: colors.ink },
   btnRow: { flexDirection: 'row', gap: 8 },
-  btn: { flex: 1, backgroundColor: '#e8531f', borderRadius: 8, paddingVertical: 12, alignItems: 'center' },
-  btnDisabled: { backgroundColor: '#ccc' },
-  btnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+  btn: { flex: 1, paddingHorizontal: 8 },
   logout: { alignSelf: 'flex-start', paddingVertical: 6 },
-  logoutText: { color: '#888', fontSize: 14, textDecorationLine: 'underline' },
-  section: { marginTop: 8, fontSize: 16, fontWeight: '700', color: '#222' },
-  empty: { textAlign: 'center', color: '#888', fontSize: 15, marginTop: 30 },
+  logoutText: { color: colors.sub, fontSize: 14, textDecorationLine: 'underline' },
+  section: { ...type.headerTitle, marginTop: 8, color: colors.ink },
+  empty: { textAlign: 'center', color: colors.sub, fontSize: 15, marginTop: 30 },
   row: {
-    padding: 14,
+    paddingHorizontal: space.screen,
+    paddingVertical: 12,
     gap: 2,
-    backgroundColor: '#fff',
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: '#ddd',
+    backgroundColor: colors.bg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.line,
   },
-  title: { fontSize: 15, fontWeight: '700', color: '#222' },
-  body: { fontSize: 14, color: '#444' },
-  time: { fontSize: 12, color: '#999' },
+  title: { ...type.rowTitle, fontWeight: '700', color: colors.ink },
+  body: { ...type.body, color: colors.ink },
+  time: type.meta,
 });

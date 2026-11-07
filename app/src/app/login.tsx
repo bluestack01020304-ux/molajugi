@@ -2,8 +2,10 @@ import { Redirect } from 'expo-router';
 import { useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { Button } from '@/components/ui/Button';
 import { useSession } from '@/hooks/useSession';
 import { supabase } from '@/lib/supabase';
+import { colors, radius, space } from '@/lib/theme';
 
 export default function LoginScreen() {
   const { session } = useSession();
@@ -48,12 +50,7 @@ export default function LoginScreen() {
         value={password}
         onChangeText={setPassword}
       />
-      <Pressable
-        style={[styles.primary, busy && styles.disabled]}
-        onPress={submit}
-        disabled={busy}>
-        <Text style={styles.primaryText}>{signupMode ? '회원가입' : '로그인'}</Text>
-      </Pressable>
+      <Button title={signupMode ? '회원가입' : '로그인'} busy={busy} onPress={submit} />
       <Pressable onPress={() => setSignupMode((v) => !v)} style={styles.secondary}>
         <Text style={styles.secondaryText}>
           {signupMode ? '로그인으로 전환' : '회원가입으로 전환'}
@@ -64,19 +61,22 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', padding: 24, gap: 12, backgroundColor: '#fff' },
-  title: { fontSize: 32, fontWeight: '700', textAlign: 'center', marginBottom: 24 },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: 24,
+    gap: space.gap,
+    backgroundColor: colors.bg,
+  },
+  title: { fontSize: 32, fontWeight: '800', color: colors.ink, textAlign: 'center', marginBottom: 24 },
   input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
+    borderRadius: radius.sm,
+    backgroundColor: colors.bg2,
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
+    color: colors.ink,
   },
-  primary: { backgroundColor: '#5b3df5', borderRadius: 8, padding: 14, alignItems: 'center' },
-  primaryText: { color: '#fff', fontSize: 16, fontWeight: '600' },
-  disabled: { opacity: 0.5 },
   secondary: { padding: 8, alignItems: 'center' },
-  secondaryText: { color: '#5b3df5', fontSize: 14 },
+  secondaryText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
 });
