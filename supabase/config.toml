@@ -394,7 +394,9 @@ deno_version = 2
 # secret_key = "env(SECRET_VALUE)"
 
 [analytics]
-enabled = true
+# Windows Docker Desktop에서 vector 컨테이너가 Docker 소켓(tcp 2375)에 못 붙어 재시작을 반복하고
+# 그 여파로 functions serve 컨테이너가 떨어지는 문제가 있어 끈다. 로컬 개발에는 필요 없다.
+enabled = false
 port = 54327
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"
