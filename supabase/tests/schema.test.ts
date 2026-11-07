@@ -17,5 +17,3 @@ Deno.test("new auth user gets profile and zero-balance wallet", async () => {
   const [p] = await sql`select nickname from profiles where id = ${u.id}`;
   assertEquals(p.nickname.startsWith("w-"), true);
 });
-
-Deno.test({ name: "close db connection", sanitizeResources: false, sanitizeOps: false, fn: () => sql.end() });

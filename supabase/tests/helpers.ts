@@ -9,6 +9,7 @@ const authOpts = { auth: { persistSession: false, autoRefreshToken: false } };
 
 export const sql = postgres(Deno.env.get("DB_URL")!);
 await sql`select 1`; // connect at import time (outside any test) so sanitizers stay quiet
+globalThis.addEventListener("unload", () => { sql.end({ timeout: 5 }); });
 
 export async function createUser(
   prefix: string,
