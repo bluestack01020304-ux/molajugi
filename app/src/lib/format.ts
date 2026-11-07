@@ -13,6 +13,11 @@ export function todayKst(): string {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+/** 서버 rules.daysLeft와 같은 의미: 만료일 − 오늘(일). */
+export function daysLeft(expiresOn: string, today: string = todayKst()): number {
+  return Math.round((Date.parse(expiresOn) - Date.parse(today)) / 86_400_000);
+}
+
 export function daysLeftLabel(expiresOn: string, today: string = todayKst()): string {
   const diff = Math.round((Date.parse(expiresOn) - Date.parse(today)) / 86_400_000);
   if (diff > 0) return `${diff}일 남음`;

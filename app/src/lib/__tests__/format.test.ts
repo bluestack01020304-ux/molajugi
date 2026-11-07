@@ -1,4 +1,4 @@
-import { daysLeftLabel, formatPoints, previewPrice } from '../format';
+import { daysLeft, daysLeftLabel, formatPoints, previewPrice } from '../format';
 
 test('formatPoints', () => expect(formatPoints(3500)).toBe('3,500P'));
 test('daysLeftLabel', () => {
@@ -7,3 +7,8 @@ test('daysLeftLabel', () => {
   expect(daysLeftLabel('2026-11-06', '2026-11-07')).toBe('만료');
 });
 test('previewPrice matches server rounding', () => expect(previewPrice(4500, 25)).toBe(1130));
+test('daysLeft mirrors server', () => {
+  expect(daysLeft('2026-11-09', '2026-11-07')).toBe(2);
+  expect(daysLeft('2026-11-08', '2026-11-07')).toBe(1);
+  expect(daysLeft('2026-11-06', '2026-11-07')).toBe(-1);
+});

@@ -5,7 +5,13 @@ import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useWallet } from '@/hooks/useWallet';
 import { fetchListing } from '@/lib/api';
 import type { Listing } from '@/lib/database.types';
-import { CATEGORY_EMOJI, asCategory, daysLeftLabel, formatPoints, formatWon } from '@/lib/format';
+import {
+  CATEGORY_EMOJI,
+  asCategory,
+  daysLeft,
+  daysLeftLabel, formatPoints,
+  formatWon,
+} from '@/lib/format';
 
 export default function ListingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -36,6 +42,7 @@ export default function ListingDetailScreen() {
     );
   }
 
+  const undrawable = listing.status !== 'active' || daysLeft(listing.expires_on) <= 1;
   const insufficient = balance < listing.price;
   const rows: { label: string; value: string; accent?: boolean }[] = [
     { label: '액면가', value: formatWon(listing.face_value) },
@@ -61,17 +68,21 @@ export default function ListingDetailScreen() {
       </View>
       <View style={styles.spacer} />
       <View style={styles.bottom}>
-        <Text style={styles.points}>
-          {`내 포인트 ${formatPoints(balance)} → ${formatPoints(balance - listing.price)}`}
-        </Text>
-        {insufficient && <Text style={styles.warn}>포인트가 부족해요. 내 정보에서 충전하세요</Text>}
+        {!undrawable && (
+          <Text style={styles.points}>
+            {`내 포인트 ${formatPoints(balance)} → ${formatPoints(balance - listing.price)}`}
+          </Text>
+        )}
+        {!undrawable && insufficient && (
+          <Text style={styles.warn}>포인트가 부족해요. 내 정보에서 충전하세요</Text>
+        )}
         <Pressable
-          style={[styles.button, insufficient && styles.buttonDisabled]}
-          disabled={insufficient}
+          style={[styles.button, (undrawable || insufficient) && styles.buttonDisabled]}
+          disabled={undrawable || insufficient}
           onPress={() => {
             // TODO(Task 12): draw 호출
           }}>
-          <Text style={styles.buttonText}>{`${formatPoints(listing.price)}로 뽑기`}</Text>
+          <Text style={styles.buttonText}>{undrawable ? '지금은 뽑을 수 없는 기프티콘이에요' : `${formatPoints(listing.price)}로 뽑기`}</Text>
         </Pressable>
       </View>
     </View>

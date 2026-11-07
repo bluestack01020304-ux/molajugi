@@ -1,6 +1,7 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
 
 import type { Category, Listing } from './database.types';
+import { todayKst } from './format';
 import { supabase } from './supabase';
 
 export class ApiError extends Error {
@@ -29,7 +30,8 @@ export function messageFor(code: string): string {
 }
 
 export async function fetchActiveListings(category: Category | 'all'): Promise<Listing[]> {
-  let q = supabase.from('listings').select('*').eq('status', 'active');
+  let q = supabase.from('listings').select('*').eq('status', 'active')
+    .gt('expires_on', todayKst());
   if (category !== 'all') q = q.eq('category', category);
   const { data, error } = await q.order('expires_on', { ascending: true });
   if (error) throw error;
