@@ -13,6 +13,13 @@ export function todayKst(): string {
   return new Date(Date.now() + 9 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
+/** YYYY-MM-DD에 n일을 더한다 (UTC 기준, 시간대 영향 없음). */
+export function addDays(dateStr: string, n: number): string {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + n);
+  return d.toISOString().slice(0, 10);
+}
+
 /** 서버 rules.daysLeft와 같은 의미: 만료일 − 오늘(일). */
 export function daysLeft(expiresOn: string, today: string = todayKst()): number {
   return Math.round((Date.parse(expiresOn) - Date.parse(today)) / 86_400_000);

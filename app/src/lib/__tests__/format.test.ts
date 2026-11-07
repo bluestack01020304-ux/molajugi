@@ -1,4 +1,4 @@
-import { daysLeft, daysLeftLabel, formatPoints, previewPrice } from '../format';
+import { addDays, daysLeft, daysLeftLabel, formatPoints, previewPrice } from '../format';
 
 test('formatPoints', () => expect(formatPoints(3500)).toBe('3,500P'));
 test('daysLeftLabel', () => {
@@ -11,4 +11,8 @@ test('daysLeft mirrors server', () => {
   expect(daysLeft('2026-11-09', '2026-11-07')).toBe(2);
   expect(daysLeft('2026-11-08', '2026-11-07')).toBe(1);
   expect(daysLeft('2026-11-06', '2026-11-07')).toBe(-1);
+});
+test('addDays', () => {
+  expect(addDays('2026-12-31', 2)).toBe('2027-01-02');
+  expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
 });

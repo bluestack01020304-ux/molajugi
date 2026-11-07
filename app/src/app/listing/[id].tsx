@@ -82,7 +82,9 @@ export default function ListingDetailScreen() {
           onPress={() => {
             // TODO(Task 12): draw 호출
           }}>
-          <Text style={styles.buttonText}>{undrawable ? '지금은 뽑을 수 없는 기프티콘이에요' : `${formatPoints(listing.price)}로 뽑기`}</Text>
+          <Text style={styles.buttonText}>{undrawable
+            ? '지금은 뽑을 수 없는 기프티콘이에요'
+            : `${formatPoints(listing.price)}로 뽑기`}</Text>
         </Pressable>
       </View>
     </View>
