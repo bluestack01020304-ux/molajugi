@@ -103,3 +103,14 @@ Deno.test("storage: folder ownership and winner access", async () => {
   const seller = await s.client.storage.from("gifticons").createSignedUrl(path, 60);
   assertEquals(seller.error, null);
 });
+Deno.test("winner can read own settlement, third party cannot", async () => {
+  const s = await createUser("s"); const w = await createUser("w"); const x = await createUser("x");
+  const id = await insertListing(s.id, { status: "won" });
+  const [d] = await sql`insert into draws (listing_id, buyer_id, amount, result) values (${id}, ${w.id}, 1000, 'win') returning id`;
+  await sql`insert into settlements (draw_id, seller_id, buyer_id, gross, fee, net, status, release_at)
+            values (${d.id}, ${s.id}, ${w.id}, 1000, 100, 900, 'held', now() + interval '3 days')`;
+  const mine = await w.client.from("settlements").select("status, net").eq("draw_id", d.id);
+  assertEquals(mine.data, [{ status: "held", net: 900 }]);
+  const other = await x.client.from("settlements").select("*").eq("draw_id", d.id);
+  assertEquals(other.data, []);
+});

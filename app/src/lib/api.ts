@@ -106,7 +106,12 @@ export async function fetchMyWins(): Promise<Win[]> {
   for (const d of draws) {
     const listing = d.listing_id ? listings.get(d.listing_id) : undefined;
     const settlement = settlements.get(d.id);
-    if (listing && settlement) wins.push({ draw: d, listing, settlement });
+    if (!listing || !settlement) {
+      // 당첨 draw에는 상품과 정산 행이 반드시 있어야 한다. 없으면 RLS/데이터 문제이므로 조용히 버리지 않는다.
+      console.warn(`fetchMyWins: draw ${d.id} is missing ${!listing ? 'listing' : 'settlement'}`);
+      throw new ApiError('INTERNAL');
+    }
+    wins.push({ draw: d, listing, settlement });
   }
   return wins;
 }
