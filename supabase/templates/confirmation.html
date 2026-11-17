@@ -1,0 +1,14 @@
+<!-- 회원가입 인증 메일. {{ .Token }} 자리에 6자리 인증 코드가 들어간다. -->
+<div style="max-width:440px;margin:0 auto;padding:32px 24px;font-family:-apple-system,'Apple SD Gothic Neo','Noto Sans KR',sans-serif;color:#212124;">
+  <p style="margin:0 0 24px;font-size:22px;font-weight:800;">몰아주기</p>
+  <p style="margin:0 0 8px;font-size:16px;font-weight:700;">이메일 인증 코드</p>
+  <p style="margin:0 0 20px;font-size:14px;line-height:1.6;color:#868B94;">
+    아래 코드를 앱의 인증 화면에 입력하면 가입이 끝나요.
+  </p>
+  <p style="margin:0 0 20px;padding:18px 0;border-radius:12px;background:#EDF2FF;color:#3B5BDB;font-size:32px;font-weight:800;letter-spacing:8px;text-align:center;">
+    {{ .Token }}
+  </p>
+  <p style="margin:0;font-size:12px;line-height:1.6;color:#ADB1BA;">
+    코드는 1시간 동안만 쓸 수 있어요. 가입한 적이 없다면 이 메일은 무시해 주세요.
+  </p>
+</div>
