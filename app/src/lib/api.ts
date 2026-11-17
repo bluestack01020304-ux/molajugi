@@ -1,4 +1,6 @@
 import { FunctionsHttpError } from '@supabase/supabase-js';
+import { File } from 'expo-file-system';
+import { Platform } from 'react-native';
 
 import type {
   Category,
@@ -10,6 +12,7 @@ import type {
   Settlement,
 } from './database.types';
 import { MIN_DRAWABLE_DAYS, addDays, todayKst } from './format';
+import { imageKind } from './imageKind';
 import { DEFAULT_RULES } from './rules';
 import { supabase } from './supabase';
 
@@ -23,12 +26,15 @@ export class ApiError extends Error {
 export const ERROR_MESSAGES: Record<string, string> = {
   INSUFFICIENT_BALANCE: '포인트가 부족해요',
   LISTING_NOT_ACTIVE: '이미 끝난 기프티콘이에요',
+  LISTING_NOT_FOUND: '기프티콘을 찾을 수 없어요',
+  LISTING_LOCKED: '이미 뽑은 사람이 있어서 액면가·확률·유효기간은 바꿀 수 없어요',
   OWN_LISTING: '내가 올린 기프티콘은 뽑을 수 없어요',
   SETTLEMENT_NOT_HELD: '이미 처리된 건이에요',
   NOT_BUYER: '당첨자만 처리할 수 있어요',
   INVALID_PROBABILITY: '확률 보기를 다시 골라 주세요',
   BAD_REQUEST: '입력값을 확인해 주세요',
   UNAUTHORIZED: '다시 로그인해 주세요',
+  NOT_AN_IMAGE: 'JPG나 PNG 사진만 올릴 수 있어요',
 };
 
 const DEFAULT_MESSAGE = '잠시 후 다시 시도해 주세요';
@@ -148,6 +154,15 @@ export async function signedImageUrl(path: string): Promise<string> {
   return data.signedUrl;
 }
 
+/** 내려받기용 주소: 서버가 "파일로 저장" 헤더와 파일 이름을 붙여 준다. 10분 동안만 유효하다. */
+export async function signedDownloadUrl(path: string, fileName: string): Promise<string> {
+  const { data, error } = await supabase.storage
+    .from('gifticons')
+    .createSignedUrl(path, 600, { download: fileName });
+  if (error || !data) throw error ?? new ApiError('INTERNAL');
+  return data.signedUrl;
+}
+
 export async function settle(
   drawId: string,
   action: 'confirm' | 'report',
@@ -162,7 +177,10 @@ export type CreateListingInput = {
   face_value: number;
   expires_on: string;
   probability: Probability;
+  /** 원본(전체) 사진: 비공개 버킷 gifticons 안의 경로 */
   image_path: string;
+  /** 보여주는 사진(바코드를 잘라 낸 사진): 공개 버킷 previews 안의 경로 */
+  preview_path: string;
   barcode_number?: string;
 };
 
@@ -173,16 +191,71 @@ async function currentUserId(): Promise<string> {
   return uid;
 }
 
-/** 기프티콘 이미지를 비공개 버킷의 `{uid}/...jpg`에 올리고 경로를 돌려준다. */
-export async function uploadGifticonImage(uri: string): Promise<string> {
+/**
+ * 고른 사진의 내용을 읽는다.
+ * 폰에서는 fetch로 기기 안의 파일을 읽으면 사진 대신 "File not found"라는 글자가 돌아오는 경우가 있어
+ * (안드로이드에서 실제로 그렇게 올라갔다), 파일 시스템 API로 직접 읽는다. 웹은 fetch로 읽는다.
+ */
+async function readImage(uri: string): Promise<{ body: ArrayBuffer; kind: 'png' | 'jpeg' }> {
+  const body =
+    Platform.OS === 'web' ? await (await fetch(uri)).arrayBuffer() : await new File(uri).arrayBuffer();
+  const kind = imageKind(new Uint8Array(body));
+  // 사진이 아닌 내용은 올리지 않는다.
+  if (!kind) throw new ApiError('NOT_AN_IMAGE');
+  return { body, kind };
+}
+
+/** 고른 사진을 버킷의 `{uid}/...`에 올리고 경로를 돌려준다. PNG는 PNG로, JPEG는 JPEG로 올린다. */
+async function uploadImage(bucket: 'gifticons' | 'previews', uri: string): Promise<string> {
   const uid = await currentUserId();
-  const path = `${uid}/${Date.now().toString(36)}${Math.random().toString(36).slice(2)}.jpg`;
-  const body = await fetch(uri).then((r) => r.arrayBuffer());
+  const { body, kind } = await readImage(uri);
+  const name = `${Date.now().toString(36)}${Math.random().toString(36).slice(2)}`;
+  const path = `${uid}/${name}.${kind === 'png' ? 'png' : 'jpg'}`;
   const { error } = await supabase.storage
-    .from('gifticons')
-    .upload(path, body, { contentType: 'image/jpeg' });
+    .from(bucket)
+    .upload(path, body, { contentType: kind === 'png' ? 'image/png' : 'image/jpeg' });
   if (error) throw new ApiError('INTERNAL');
   return path;
+}
+
+/** 원본(전체) 사진을 비공개 버킷에 올린다. 판매자와 당첨자만 볼 수 있다. */
+export function uploadGifticonImage(uri: string): Promise<string> {
+  return uploadImage('gifticons', uri);
+}
+
+/** 보여주는 사진(바코드를 잘라 낸 사진)을 공개 버킷에 올린다. 목록에서 누구나 본다. */
+export function uploadPreviewImage(uri: string): Promise<string> {
+  return uploadImage('previews', uri);
+}
+
+/** 원본 사진에서 읽어 낸 정보. 못 읽은 항목은 null (서버 gifticon-reading.ts와 같은 모양). */
+export type GifticonReading = {
+  brand: string | null;
+  product_name: string | null;
+  face_value: number | null;
+  expires_on: string | null;
+  barcode_number: string | null;
+  category: Category | null;
+};
+
+export type GifticonReadResult = {
+  fields: GifticonReading;
+  /** 바코드 막대의 윗변이 사진 높이의 어디쯤인지 (0~1). 바코드를 못 찾았으면 null. */
+  barcodeTop: number | null;
+  /** 서버가 글자 읽기(AI)까지 했는지. false면 바코드 번호만 읽은 것이다. */
+  ai: boolean;
+};
+
+/**
+ * 올린 원본 사진을 서버가 읽어 폼을 채울 정보를 돌려준다.
+ * 바코드 번호와 위치는 항상(바코드 무늬 해독), 나머지 글자는 서버에 AI 키가 있을 때만 읽는다.
+ */
+export async function readGifticon(imagePath: string): Promise<GifticonReadResult> {
+  const r = await invoke<{ fields: GifticonReading; barcode_top: number | null; ai: boolean }>(
+    'read-gifticon',
+    { image_path: imagePath },
+  );
+  return { fields: r.fields, barcodeTop: r.barcode_top, ai: r.ai };
 }
 
 export async function createListing(input: CreateListingInput): Promise<{ id: string; price: number }> {
@@ -226,6 +299,31 @@ export async function fetchMyListings(): Promise<MyListing[]> {
     settled_net: net.get(l.id) ?? 0,
     settlement_status: l.status === 'won' ? (latest.get(l.id)?.status ?? null) : null,
   }));
+}
+
+/** 판매자 본인이 보는 매물 한 건. 당첨으로 넘어간 매물은 사진·바코드를 더 볼 수 없어 secret이 null이다. */
+export async function fetchMyListing(
+  id: string,
+): Promise<{ listing: MyListing; secret: ListingSecret | null }> {
+  const [all, sec] = await Promise.all([
+    fetchMyListings(),
+    supabase.from('listing_secrets').select('*').eq('listing_id', id).maybeSingle(),
+  ]);
+  const listing = all.find((l) => l.id === id);
+  if (!listing) throw new ApiError('LISTING_NOT_FOUND');
+  if (sec.error) throw sec.error;
+  return { listing, secret: sec.data };
+}
+
+/** 사진 경로는 그 사진을 바꿀 때만 보낸다. 가격은 서버가 다시 계산해 돌려준다. */
+export type UpdateListingInput = Omit<CreateListingInput, 'image_path' | 'preview_path'> & {
+  id: string;
+  image_path?: string;
+  preview_path?: string;
+};
+
+export async function updateListing(input: UpdateListingInput): Promise<{ id: string; price: number }> {
+  return invoke('update-listing', input);
 }
 
 export async function withdrawListing(id: string): Promise<void> {

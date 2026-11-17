@@ -1,8 +1,19 @@
-import { ActivityIndicator, Pressable, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  ActivityIndicator,
+  Animated,
+  Pressable,
+  StyleSheet,
+  Text,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
+import { usePressScale } from '@/components/ui/usePressScale';
 import { colors, radius, type } from '@/lib/theme';
 
 export type ButtonVariant = 'primary' | 'soft' | 'outline' | 'danger';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 export function Button({
   title,
@@ -23,17 +34,21 @@ export function Button({
   const filled = variant === 'primary' || variant === 'soft';
   const fg =
     variant === 'primary' ? colors.bg : variant === 'danger' ? colors.danger : variant === 'soft' ? colors.primary : colors.ink;
+  const press = usePressScale();
   return (
-    <Pressable
+    <AnimatedPressable
       accessibilityRole="button"
       accessibilityState={{ disabled: inactive }}
       disabled={inactive}
       onPress={onPress}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}
       style={[
         styles.base,
         styles[variant],
         disabled && (filled ? styles.disabledFilled : styles.disabledFaded),
         style,
+        { transform: [{ scale: press.scale }] },
       ]}>
       {busy ? (
         <ActivityIndicator color={fg} />
@@ -46,7 +61,7 @@ export function Button({
           {title}
         </Text>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 

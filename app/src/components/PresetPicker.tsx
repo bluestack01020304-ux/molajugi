@@ -9,10 +9,12 @@ export function PresetPicker({
   faceValue,
   value,
   onChange,
+  disabled = false,
 }: {
   faceValue: number;
   value: Probability | null;
   onChange: (p: Probability) => void;
+  disabled?: boolean;
 }) {
   const { probabilities } = useRules();
   return (
@@ -22,8 +24,9 @@ export function PresetPicker({
         return (
           <Pressable
             key={p}
+            disabled={disabled}
             onPress={() => onChange(p)}
-            style={[styles.btn, selected && styles.btnSelected]}>
+            style={[styles.btn, selected && styles.btnSelected, disabled && !selected && styles.btnDisabled]}>
             <Text style={[styles.pct, selected && styles.pctSelected]}>{`${p}%`}</Text>
             <Text style={[styles.price, selected && styles.priceSelected]}>
               {faceValue > 0 ? formatWon(previewPrice(faceValue, p)) : '—'}
@@ -47,6 +50,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.bg,
     gap: 4,
   },
+  btnDisabled: { opacity: 0.4 },
   btnSelected: { borderColor: colors.primary, backgroundColor: colors.primarySoft },
   pct: { fontSize: 18, fontWeight: '800', color: colors.ink },
   pctSelected: { color: colors.primary },

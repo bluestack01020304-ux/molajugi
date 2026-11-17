@@ -1,5 +1,6 @@
 import { Redirect, Stack, usePathname } from 'expo-router';
 
+import { WebFrame } from '@/components/WebFrame';
 import { useSession } from '@/hooks/useSession';
 import { RulesProvider } from '@/hooks/useRules';
 import { NotificationsProvider } from '@/hooks/useUnreadCount';
@@ -14,6 +15,7 @@ export default function RootLayout() {
   if (!session && pathname !== '/login') return <Redirect href="/login" />;
 
   return (
+    <WebFrame>
     <WalletProvider>
       <RulesProvider>
         <NotificationsProvider>
@@ -39,9 +41,15 @@ export default function RootLayout() {
               name="sell/new"
               options={{ headerShown: true, presentation: 'card', title: '기프티콘 올리기' }}
             />
+            <Stack.Screen name="sell/[id]" options={{ headerShown: true, presentation: 'card' }} />
+            <Stack.Screen
+              name="sell/edit/[id]"
+              options={{ headerShown: true, presentation: 'card', title: '기프티콘 수정' }}
+            />
           </Stack>
         </NotificationsProvider>
       </RulesProvider>
     </WalletProvider>
+    </WebFrame>
   );
 }

@@ -1,12 +1,15 @@
 import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
+import { rowBackground } from '@/components/ListingRow';
 import { StatusBadge, listingBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/Button';
+import { FadeIn, staggerDelay } from '@/components/ui/FadeIn';
 import { Fab } from '@/components/ui/Fab';
 import { Thumb } from '@/components/ui/Thumb';
-import { ApiError, fetchMyListings, messageFor, withdrawListing, type MyListing } from '@/lib/api';
+import { fetchMyListings, type MyListing } from '@/lib/api';
+import { previewUrl } from '@/lib/preview';
 import { formatPoints } from '@/lib/format';
 import { colors, space, type } from '@/lib/theme';
 
@@ -49,24 +52,6 @@ export default function SellScreen() {
     setRefreshing(false);
   }
 
-  function confirmWithdraw(item: MyListing) {
-    Alert.alert('내릴까요?', item.product_name, [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '내리기',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await withdrawListing(item.id);
-          } catch (e) {
-            Alert.alert(messageFor(e instanceof ApiError ? e.code : 'INTERNAL'));
-          }
-          load();
-        },
-      },
-    ]);
-  }
-
   const fab = <Fab onPress={() => router.push('/sell/new')} />;
 
   if (loading) {
@@ -101,14 +86,14 @@ export default function SellScreen() {
       <FlatList
         data={items}
         keyExtractor={(l) => l.id}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const b = listingBadge(item);
           return (
+            <FadeIn delay={staggerDelay(index)}>
             <Pressable
-              style={styles.row}
-              disabled={item.status !== 'active'}
-              onPress={() => confirmWithdraw(item)}>
-              <Thumb category={item.category} size={52} />
+              style={(state) => [styles.row, rowBackground(state)]}
+              onPress={() => router.push({ pathname: '/sell/[id]', params: { id: item.id } })}>
+              <Thumb category={item.category} size={52} uri={previewUrl(item.preview_path)} />
               <View style={styles.mid}>
                 <Text style={styles.title} numberOfLines={1}>
                   {`${item.brand} ${item.product_name}`}
@@ -119,6 +104,7 @@ export default function SellScreen() {
               </View>
               <StatusBadge label={b.label} tone={b.tone} />
             </Pressable>
+            </FadeIn>
           );
         }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}

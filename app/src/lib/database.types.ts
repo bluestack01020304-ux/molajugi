@@ -85,14 +85,14 @@ isOneToOne: true
                   ]
                 },"listings": {
                   Row: {
-                    "brand": string,"category": string,"created_at": string | null,"expires_on": string,"face_value": number,"id": string,"miss_count": number,"price": number,"probability": number,"product_name": string,"seller_id": string | null,"status": string
+                    "brand": string,"category": string,"created_at": string | null,"expires_on": string,"face_value": number,"id": string,"miss_count": number,"preview_path": string | null,"price": number,"probability": number,"product_name": string,"seller_id": string | null,"status": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "brand": string,"category": string,"created_at"?: string | null,"expires_on": string,"face_value": number,"id"?: string,"miss_count"?: number,"price": number,"probability": number,"product_name": string,"seller_id"?: string | null,"status"?: string
+                    "brand": string,"category": string,"created_at"?: string | null,"expires_on": string,"face_value": number,"id"?: string,"miss_count"?: number,"preview_path"?: string | null,"price": number,"probability": number,"product_name": string,"seller_id"?: string | null,"status"?: string
                   }
                   Update: {
-                    "brand"?: string,"category"?: string,"created_at"?: string | null,"expires_on"?: string,"face_value"?: number,"id"?: string,"miss_count"?: number,"price"?: number,"probability"?: number,"product_name"?: string,"seller_id"?: string | null,"status"?: string
+                    "brand"?: string,"category"?: string,"created_at"?: string | null,"expires_on"?: string,"face_value"?: number,"id"?: string,"miss_count"?: number,"preview_path"?: string | null,"price"?: number,"probability"?: number,"product_name"?: string,"seller_id"?: string | null,"status"?: string
                   }
                   Relationships: [
                     {

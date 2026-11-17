@@ -1,12 +1,41 @@
-import { Pressable, StyleSheet, Text } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Animated, Pressable, StyleSheet, Text } from 'react-native';
 
+import { usePressScale } from '@/components/ui/usePressScale';
+import { motionReduced, useNativeDriver } from '@/lib/motion';
 import { colors, radius, space } from '@/lib/theme';
 
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
+
 export function Fab({ label = '+ 올리기', onPress }: { label?: string; onPress: () => void }) {
+  const press = usePressScale(0.94);
+  // 화면에 들어올 때 한 번 톡 튀어나온다.
+  const appear = useRef(new Animated.Value(motionReduced() ? 1 : 0)).current;
+  useEffect(() => {
+    if (motionReduced()) return;
+    const anim = Animated.spring(appear, {
+      toValue: 1,
+      delay: 250,
+      speed: 14,
+      bounciness: 10,
+      useNativeDriver,
+    });
+    anim.start();
+    return () => anim.stop();
+  }, [appear]);
+
   return (
-    <Pressable accessibilityRole="button" style={styles.fab} onPress={onPress}>
+    <AnimatedPressable
+      accessibilityRole="button"
+      style={[
+        styles.fab,
+        { opacity: appear, transform: [{ scale: Animated.multiply(appear, press.scale) }] },
+      ]}
+      onPress={onPress}
+      onPressIn={press.onPressIn}
+      onPressOut={press.onPressOut}>
       <Text style={styles.text}>{label}</Text>
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 

@@ -19,6 +19,12 @@ export const colors = {
   okBg: '#E6F6EA',
   okFg: '#1E7B3A',
   mutedBg: '#F1F3F5',
+  // 컴퓨터 화면에서 앱 바깥을 채우는 배경, 당첨 색종이
+  backdrop: '#EEF1FB',
+  gold: '#F2B705',
+  pink: '#F06595',
+  // 창 뒤를 어둡게 덮는 반투명 막 (자르기 화면)
+  scrim: 'rgba(17, 18, 20, 0.6)',
 } as const;
 
 export const type = {

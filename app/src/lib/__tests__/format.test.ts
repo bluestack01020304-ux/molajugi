@@ -1,4 +1,11 @@
-import { addDays, daysLeft, daysLeftLabel, formatPoints, previewPrice } from '../format';
+import {
+  addDays,
+  daysLeft,
+  daysLeftLabel,
+  formatPoints,
+  gifticonFileName,
+  previewPrice,
+} from '../format';
 
 test('formatPoints', () => expect(formatPoints(3500)).toBe('3,500P'));
 test('daysLeftLabel', () => {
@@ -15,4 +22,9 @@ test('daysLeft mirrors server', () => {
 test('addDays', () => {
   expect(addDays('2026-12-31', 2)).toBe('2027-01-02');
   expect(addDays('2026-03-01', -1)).toBe('2026-02-28');
+});
+test('gifticonFileName builds a safe, readable file name', () => {
+  expect(gifticonFileName('스타벅스', '아메리카노 T', 'uid/abc.jpg')).toBe('몰아주기_스타벅스_아메리카노 T.jpg');
+  expect(gifticonFileName('A/B', 'x:y*z?', 'uid/abc.PNG')).toBe('몰아주기_AB_xyz.png');
+  expect(gifticonFileName('  ', '', 'uid/abc')).toBe('몰아주기.jpg');
 });

@@ -2,10 +2,13 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native';
 
+import { rowBackground } from '@/components/ListingRow';
 import { StatusBadge, settlementBadge } from '@/components/StatusBadge';
+import { FadeIn, staggerDelay } from '@/components/ui/FadeIn';
 import { Button } from '@/components/ui/Button';
 import { Thumb } from '@/components/ui/Thumb';
 import { fetchMyWins, type Win } from '@/lib/api';
+import { previewUrl } from '@/lib/preview';
 import { colors, space, type } from '@/lib/theme';
 
 export default function GifticonsScreen() {
@@ -73,13 +76,18 @@ export default function GifticonsScreen() {
       <FlatList
         data={items}
         keyExtractor={(w) => w.draw.id}
-        renderItem={({ item }) => {
+        renderItem={({ item, index }) => {
           const b = settlementBadge(item.settlement.status);
           return (
+            <FadeIn delay={staggerDelay(index)}>
             <Pressable
-              style={styles.row}
+              style={(state) => [styles.row, rowBackground(state)]}
               onPress={() => router.push({ pathname: '/gifticon/[id]', params: { id: item.draw.id } })}>
-              <Thumb category={item.listing.category} size={52} />
+              <Thumb
+                category={item.listing.category}
+                size={52}
+                uri={previewUrl(item.listing.preview_path)}
+              />
               <View style={styles.mid}>
                 <Text style={styles.title} numberOfLines={1}>
                   {`${item.listing.brand} ${item.listing.product_name}`}
@@ -88,6 +96,7 @@ export default function GifticonsScreen() {
               </View>
               <StatusBadge label={b.label} tone={b.tone} />
             </Pressable>
+            </FadeIn>
           );
         }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}

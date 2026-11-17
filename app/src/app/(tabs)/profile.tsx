@@ -2,7 +2,7 @@ import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
 import { colors, space, type } from '@/lib/theme';
@@ -15,6 +15,7 @@ import {
   topup,
 } from '@/lib/api';
 import type { Notification } from '@/lib/database.types';
+import { showMessage } from '@/lib/dialog';
 import { formatPoints } from '@/lib/format';
 import { supabase } from '@/lib/supabase';
 import { useRules } from '@/hooks/useRules';
@@ -88,7 +89,7 @@ export default function ProfileScreen() {
       await topup();
       await refresh();
     } catch (e) {
-      Alert.alert(messageFor(e instanceof ApiError ? e.code : 'INTERNAL'));
+      showMessage(messageFor(e instanceof ApiError ? e.code : 'INTERNAL'));
     } finally {
       setBusy(false);
     }

@@ -1,6 +1,7 @@
 import { Tabs, useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View, type ColorValue } from 'react-native';
 
+import { Logo } from '@/components/Logo';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { useUnreadCount } from '@/hooks/useUnreadCount';
 import { colors, space, type } from '@/lib/theme';
@@ -12,7 +13,12 @@ function tabIcon(outline: IconName, filled: IconName) {
 }
 
 function HomeHeaderTitle() {
-  return <Text style={[type.screenTitle, { color: colors.ink }]}>몰아주기</Text>;
+  return (
+    <View style={styles.homeTitle}>
+      <Logo size={26} />
+      <Text style={[type.screenTitle, { color: colors.ink }]}>몰아주기</Text>
+    </View>
+  );
 }
 
 function BellButton({ unread }: { unread: number }) {
@@ -44,6 +50,7 @@ export default function TabsLayout() {
         tabBarLabelStyle: { fontSize: 10 },
         tabBarStyle: { borderTopColor: colors.line, backgroundColor: colors.bg },
         sceneStyle: { backgroundColor: colors.bg },
+        animation: 'fade',
       }}>
       <Tabs.Screen
         name="index"
@@ -75,6 +82,7 @@ export default function TabsLayout() {
 }
 
 const styles = StyleSheet.create({
+  homeTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   bell: { marginRight: space.screen, padding: 4 },
   dot: {
     position: 'absolute',

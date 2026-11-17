@@ -5,6 +5,7 @@ import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, View } f
 import { CategoryChips } from '@/components/CategoryChips';
 import { ListingRow } from '@/components/ListingRow';
 import { Button } from '@/components/ui/Button';
+import { FadeIn, staggerDelay } from '@/components/ui/FadeIn';
 import { Fab } from '@/components/ui/Fab';
 import { fetchActiveListings } from '@/lib/api';
 import type { Category, Listing } from '@/lib/database.types';
@@ -77,8 +78,10 @@ export default function HomeScreen() {
         <FlatList
           data={items}
           keyExtractor={(l) => l.id}
-          renderItem={({ item }) => (
-            <ListingRow listing={item} onPress={() => router.push(`/listing/${item.id}`)} />
+          renderItem={({ item, index }) => (
+            <FadeIn delay={staggerDelay(index)}>
+              <ListingRow listing={item} onPress={() => router.push(`/listing/${item.id}`)} />
+            </FadeIn>
           )}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
           ListEmptyComponent={<Text style={styles.empty}>아직 올라온 기프티콘이 없어요</Text>}

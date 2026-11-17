@@ -1,11 +1,13 @@
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, StyleSheet, Text, View } from 'react-native';
 
 import { DetailBottomBar } from '@/components/DetailBottomBar';
+import { FadeIn } from '@/components/ui/FadeIn';
 import { useWallet } from '@/hooks/useWallet';
 import { ApiError, draw, fetchListing, messageFor } from '@/lib/api';
 import type { Listing } from '@/lib/database.types';
+import { showMessage } from '@/lib/dialog';
 import {
   CATEGORY_EMOJI,
   CATEGORY_LABELS,
@@ -15,6 +17,7 @@ import {
   daysLeftLabel,
   formatWon,
 } from '@/lib/format';
+import { previewUrl } from '@/lib/preview';
 import { colors, radius, space, type } from '@/lib/theme';
 
 export default function ListingDetailScreen() {
@@ -23,6 +26,7 @@ export default function ListingDetailScreen() {
   const [listing, setListing] = useState<Listing | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [photoFailed, setPhotoFailed] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -46,7 +50,7 @@ export default function ListingDetailScreen() {
       });
     } catch (e) {
       const code = e instanceof ApiError ? e.code : 'INTERNAL';
-      Alert.alert('뽑기 실패', messageFor(code));
+      showMessage('뽑기 실패', messageFor(code));
       if (code === 'LISTING_NOT_ACTIVE') {
         fetchListing(id).then(setListing).catch(() => {});
       }
@@ -68,6 +72,8 @@ export default function ListingDetailScreen() {
   }
 
   const category = asCategory(listing.category);
+  // 판매자가 올린 "보여주는 사진"(바코드를 잘라 낸 사진). 없는 옛 매물은 이모지로 대신한다.
+  const photo = previewUrl(listing.preview_path);
   const undrawable = listing.status !== 'active' || daysLeft(listing.expires_on) < MIN_DRAWABLE_DAYS;
   const rows: { label: string; value: string; accent?: boolean }[] = [
     { label: '액면가', value: formatWon(listing.face_value) },
@@ -78,10 +84,19 @@ export default function ListingDetailScreen() {
   return (
     <View style={styles.container}>
       <Stack.Screen options={{ title: listing.brand }} />
-      <View style={styles.body}>
-        <View style={styles.hero}>
-          <Text style={styles.heroEmoji}>{CATEGORY_EMOJI[category]}</Text>
-        </View>
+      <FadeIn style={styles.body}>
+        {photo && !photoFailed ? (
+          <Image
+            source={{ uri: photo }}
+            style={styles.heroPhoto}
+            resizeMode="contain"
+            onError={() => setPhotoFailed(true)}
+          />
+        ) : (
+          <View style={styles.hero}>
+            <Text style={styles.heroEmoji}>{CATEGORY_EMOJI[category]}</Text>
+          </View>
+        )}
         <Text style={styles.name}>{listing.product_name}</Text>
         <Text style={styles.subline}>
           {`${CATEGORY_LABELS[category]} · 유효기간 ${listing.expires_on.replace(/-/g, '.')} (${daysLeftLabel(listing.expires_on)})`}
@@ -94,7 +109,7 @@ export default function ListingDetailScreen() {
             </View>
           ))}
         </View>
-      </View>
+      </FadeIn>
       <DetailBottomBar
         price={listing.price}
         faceValue={listing.face_value}
@@ -119,6 +134,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  heroPhoto: { width: '100%', height: 220, backgroundColor: colors.bg2, borderRadius: radius.md },
   heroEmoji: { fontSize: 56 },
   name: { ...type.screenTitle, color: colors.ink, marginTop: 14 },
   subline: { ...type.meta, marginTop: 4 },

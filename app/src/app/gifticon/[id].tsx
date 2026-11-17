@@ -1,11 +1,21 @@
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { StatusBadge, settlementBadge } from '@/components/StatusBadge';
 import { Button } from '@/components/ui/Button';
 import { useRules } from '@/hooks/useRules';
-import { ApiError, fetchWinDetail, messageFor, settle, signedImageUrl } from '@/lib/api';
+import {
+  ApiError,
+  fetchWinDetail,
+  messageFor,
+  settle,
+  signedDownloadUrl,
+  signedImageUrl,
+} from '@/lib/api';
+import { confirmAction, showMessage } from '@/lib/dialog';
+import { gifticonFileName } from '@/lib/format';
+import { SavePermissionError, saveImage } from '@/lib/saveImage';
 import { colors, radius, space, type } from '@/lib/theme';
 
 type Detail = Awaited<ReturnType<typeof fetchWinDetail>>;
@@ -19,6 +29,7 @@ export default function GifticonScreen() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -49,21 +60,45 @@ export default function GifticonScreen() {
     try {
       const { status } = await settle(id, action);
       setDetail((d) => (d ? { ...d, settlement: { ...d.settlement, status } } : d));
-      Alert.alert(action === 'confirm' ? '확인했어요' : '신고가 접수됐어요');
+      showMessage(action === 'confirm' ? '확인했어요' : '신고가 접수됐어요');
     } catch (e) {
       const code = e instanceof ApiError ? e.code : 'INTERNAL';
-      Alert.alert(messageFor(code));
+      showMessage(messageFor(code));
       if (code === 'SETTLEMENT_NOT_HELD') await load();
     } finally {
       setBusy(false);
     }
   }
 
+  async function onSave() {
+    if (saving || !detail) return;
+    setSaving(true);
+    try {
+      const { listing, secret } = detail;
+      const name = gifticonFileName(listing.brand, listing.product_name, secret.image_path);
+      await saveImage(await signedDownloadUrl(secret.image_path, name), name);
+      // 웹은 브라우저가 내려받기를 직접 보여 주므로 따로 알리지 않는다.
+      if (Platform.OS !== 'web') showMessage('사진을 저장했어요', '사진 앱에서 확인할 수 있어요.');
+    } catch (e) {
+      if (e instanceof SavePermissionError) {
+        showMessage('사진 저장 권한이 필요해요', '기기 설정에서 사진 저장을 허용한 뒤 다시 눌러 주세요.');
+      } else {
+        console.warn('gifticon save failed', (e as Error).message);
+        showMessage('사진을 저장하지 못했어요', '잠시 후 다시 시도해 주세요.');
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
   function onReport() {
-    Alert.alert('이미 쓰인 바코드인가요?', '신고하면 판매자 정산이 보류되고 확인 절차가 진행돼요.', [
-      { text: '취소', style: 'cancel' },
-      { text: '신고하기', style: 'destructive', onPress: () => run('report') },
-    ]);
+    confirmAction({
+      title: '이미 쓰인 바코드인가요?',
+      message: '신고하면 판매자 정산이 보류되고 확인 절차가 진행돼요.',
+      confirmText: '신고하기',
+      destructive: true,
+      onConfirm: () => run('report'),
+    });
   }
 
   if (loading) return <ActivityIndicator style={styles.loading} color={colors.primary} />;
@@ -104,6 +139,9 @@ export default function GifticonScreen() {
         />
       )}
       {secret.barcode_number ? <Text style={styles.barcode}>{secret.barcode_number}</Text> : null}
+      {!imageFailed && imageUrl ? (
+        <Button variant="outline" title="사진 저장" busy={saving} onPress={onSave} />
+      ) : null}
       <Text style={styles.meta}>{`유효기간 ${listing.expires_on.replace(/-/g, '.')}`}</Text>
       {settlement.status === 'held' ? (
         <>
