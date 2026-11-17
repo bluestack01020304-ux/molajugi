@@ -1,31 +1,49 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Dimensions, PanResponder, StyleSheet, Text, View } from 'react-native';
+import { Animated, Easing, PanResponder, StyleSheet, Text, View } from 'react-native';
 
-import { GRID, cellIndexAt, isRevealComplete } from '@/lib/scratch';
+import { useFrameSize } from '@/lib/frame';
+import { motionReduced, useNativeDriver } from '@/lib/motion';
+import { GRID, cardSize, cellIndexAt, isRevealComplete } from '@/lib/scratch';
+import { colors, radius, type } from '@/lib/theme';
 
 const AUTO_REVEAL_MS = 10_000;
 const TOTAL = GRID.cols * GRID.rows;
-const CARD_WIDTH = Dimensions.get('window').width - 32;
-const CARD_HEIGHT = CARD_WIDTH * 1.4;
 
 type Props = { result: 'win' | 'miss'; onRevealed: () => void };
 
 export function ScratchCard({ result, onRevealed }: Props) {
   const [revealed, setRevealed] = useState<Set<number>>(new Set());
   const [done, setDone] = useState(false);
-  const [size, setSize] = useState({ width: CARD_WIDTH, height: CARD_HEIGHT });
+  // 창 크기가 바뀌면(컴퓨터에서 창을 줄이거나 늘리면) 카드도 따라 바뀐다.
+  const frame = useFrameSize();
+  const card = cardSize(frame.width, frame.height);
+  const [size, setSize] = useState(card);
   const set = useRef<Set<number>>(new Set());
   const sizeRef = useRef(size);
   sizeRef.current = size;
   const firedRef = useRef(false);
   const onRevealedRef = useRef(onRevealed);
   onRevealedRef.current = onRevealed;
+  // 다 긁으면 남은 코팅이 스르륵 걷히고(coat 1→0) 결과 글자가 톡 튀어나온다(pop).
+  const coat = useRef(new Animated.Value(1)).current;
+  const pop = useRef(new Animated.Value(1)).current;
 
   const finish = () => {
     if (firedRef.current) return;
     firedRef.current = true;
-    setDone(true);
     onRevealedRef.current();
+    if (motionReduced()) {
+      setDone(true);
+      return;
+    }
+    Animated.timing(coat, {
+      toValue: 0,
+      duration: 380,
+      easing: Easing.out(Easing.quad),
+      useNativeDriver,
+    }).start(() => setDone(true));
+    pop.setValue(0.6);
+    Animated.spring(pop, { toValue: 1, speed: 10, bounciness: 16, useNativeDriver }).start();
   };
 
   useEffect(() => {
@@ -60,14 +78,15 @@ export function ScratchCard({ result, onRevealed }: Props) {
   return (
     <View style={styles.wrap}>
       {!done && <Text style={styles.hint}>손가락으로 긁어 보세요</Text>}
-      <View
-        style={[styles.card, { width: CARD_WIDTH, height: CARD_HEIGHT }]}
-        onLayout={(e) => setSize(e.nativeEvent.layout)}>
-        <Text style={[styles.result, isWin ? styles.win : styles.miss]}>
+      <View style={[styles.card, card]} onLayout={(e) => setSize(e.nativeEvent.layout)}>
+        {/* 웹에서 마우스로 긁을 때 글자가 선택되거나 끌려 나와 결과가 미리 보이지 않게 한다. */}
+        <Animated.Text
+          selectable={false}
+          style={[styles.result, isWin ? styles.win : styles.miss, { transform: [{ scale: pop }] }]}>
           {isWin ? '당첨!' : '꽝'}
-        </Text>
+        </Animated.Text>
         {!done && (
-          <View style={StyleSheet.absoluteFill} {...pan.panHandlers}>
+          <Animated.View style={[StyleSheet.absoluteFill, { opacity: coat }]} {...pan.panHandlers}>
             {Array.from({ length: TOTAL }, (_, i) =>
               revealed.has(i) ? null : (
                 <View
@@ -77,14 +96,15 @@ export function ScratchCard({ result, onRevealed }: Props) {
                     position: 'absolute',
                     left: (i % GRID.cols) * cellW,
                     top: Math.floor(i / GRID.cols) * cellH,
-                    width: cellW - 1,
-                    height: cellH - 1,
-                    backgroundColor: '#b9b9b9',
+                    // 칸 사이에 틈이 있으면 그 사이로 결과 글자 색이 비쳐 긁기 전에 결과를 알 수 있다.
+                    width: cellW + 0.5,
+                    height: cellH + 0.5,
+                    backgroundColor: (i + Math.floor(i / GRID.cols)) % 2 === 0 ? colors.coatA : colors.coatB,
                   }}
                 />
               ),
             )}
-          </View>
+          </Animated.View>
         )}
       </View>
     </View>
@@ -93,17 +113,16 @@ export function ScratchCard({ result, onRevealed }: Props) {
 
 const styles = StyleSheet.create({
   wrap: { alignItems: 'center', gap: 8 },
-  hint: { fontSize: 14, color: '#666' },
+  hint: { ...type.meta, fontSize: 14 },
   card: {
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: '#e5e5e5',
-    borderRadius: 8,
+    backgroundColor: colors.bg2,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    userSelect: 'none',
   },
-  result: { fontSize: 44, fontWeight: '800' },
-  win: { color: '#e8531f' },
-  miss: { color: '#888' },
+  result: { fontSize: 44, fontWeight: '900', userSelect: 'none', pointerEvents: 'none' },
+  win: { color: colors.primary },
+  miss: { color: colors.sub, fontWeight: '800' },
 });

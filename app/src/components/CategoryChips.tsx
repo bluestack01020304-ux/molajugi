@@ -2,6 +2,7 @@ import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 import type { Category } from '@/lib/database.types';
 import { CATEGORIES, CATEGORY_LABELS } from '@/lib/format';
+import { colors, radius, space } from '@/lib/theme';
 
 type Value = Category | 'all';
 
@@ -40,10 +41,17 @@ export function CategoryChips({
 }
 
 const styles = StyleSheet.create({
-  scroll: { flexGrow: 0, backgroundColor: '#fff', borderBottomWidth: 1, borderBottomColor: '#e5e5e5' },
-  content: { paddingHorizontal: 12, paddingVertical: 10, gap: 8 },
-  chip: { paddingHorizontal: 14, paddingVertical: 7, borderRadius: 16, backgroundColor: '#eee' },
-  chipSelected: { backgroundColor: '#222' },
-  label: { fontSize: 14, color: '#444' },
-  labelSelected: { color: '#fff', fontWeight: '600' },
+  scroll: { flexGrow: 0, backgroundColor: colors.bg, borderBottomWidth: 1, borderBottomColor: colors.line },
+  content: { paddingHorizontal: space.screen, paddingVertical: 10, gap: 8 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 7,
+    borderRadius: radius.pill,
+    backgroundColor: colors.bg,
+    borderWidth: 1,
+    borderColor: colors.line,
+  },
+  chipSelected: { backgroundColor: colors.ink, borderColor: colors.ink },
+  label: { fontSize: 14, color: colors.ink },
+  labelSelected: { color: colors.bg, fontWeight: '600' },
 });

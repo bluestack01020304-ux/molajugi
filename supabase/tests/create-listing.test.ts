@@ -1,13 +1,15 @@
 import { assertEquals } from "@std/assert";
 import { callFn, createUser, kstDateOffset, sql } from "./helpers.ts";
 
-const body = (uid: string, o = {}) => ({ category:"cafe", brand:"메가커피", product_name:"아이스 아메리카노", face_value:2000, expires_on:kstDateOffset(30), probability:50, image_path:`${uid}/x.jpg`, barcode_number:"9401 2233", ...o });
+const body = (uid: string, o = {}) => ({ category:"cafe", brand:"메가커피", product_name:"아이스 아메리카노", face_value:2000, expires_on:kstDateOffset(30), probability:50, image_path:`${uid}/x.jpg`, preview_path:`${uid}/p.jpg`, barcode_number:"9401 2233", ...o });
 Deno.test("create-listing computes price server-side", async () => {
   const s = await createUser("s");
   const r = await callFn("create-listing", s.jwt, body(s.id, { face_value: 4500, probability: 25 }));
   assertEquals([r.status, r.json.price], [200, 1130]);
   const [sec] = await sql`select barcode_number from listing_secrets where listing_id=${r.json.id}`;
   assertEquals(sec.barcode_number, "9401 2233");
+  const [l] = await sql`select preview_path from listings where id=${r.json.id}`;
+  assertEquals(l.preview_path, `${s.id}/p.jpg`);
 });
 Deno.test("create-listing rejects expiry in 1 day", async () => {
   const s = await createUser("s");
@@ -40,4 +42,11 @@ Deno.test("create-listing rejects face_value whose price rounds to 0 or exceeds 
   assertEquals([tiny.status, tiny.json.error], [400, "BAD_REQUEST"]);
   const huge = await callFn("create-listing", s.jwt, body(s.id, { face_value: 2_000_000_001 }));
   assertEquals([huge.status, huge.json.error], [400, "BAD_REQUEST"]);
+});
+Deno.test("create-listing requires a preview image in the seller's own folder", async () => {
+  const s = await createUser("s");
+  for (const p of [undefined, "", "other/p.jpg", `${s.id}/p.txt`]) {
+    const r = await callFn("create-listing", s.jwt, body(s.id, { preview_path: p }));
+    assertEquals([r.status, r.json.error], [400, "BAD_REQUEST"], String(p));
+  }
 });

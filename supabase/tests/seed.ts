@@ -2,7 +2,7 @@
 // 멱등: 판매자(seller@test.local)에게 매물이 하나라도 있으면 매물 생성은 건너뛴다. 처음부터 다시 하려면 `db reset`.
 import { createClient } from "@supabase/supabase-js";
 import { calcPrice, type Probability } from "../functions/_shared/rules.ts";
-import { ensureUser, kstDateOffset, sql } from "./helpers.ts";
+import { ensureUser, kstDateOffset, sql, withdrawTestListings } from "./helpers.ts";
 
 // 1×1 투명 PNG
 const PNG = Uint8Array.from(
@@ -47,6 +47,9 @@ if (n > 0) {
               values (${row.id}, ${path}, ${barcode})`;
   }
 }
+
+const swept = await withdrawTestListings();
+if (swept > 0) console.log(`테스트가 남긴 매물 ${swept}건을 내렸다`);
 
 const rows = await sql`
   select category, brand, product_name, face_value, probability, price, expires_on::text as expires_on

@@ -71,6 +71,17 @@ export const CATEGORY_EMOJI: Record<Category, string> = {
   etc: '🎁',
 };
 
+/**
+ * 내려받는 기프티콘 사진의 파일 이름. 예) `몰아주기_스타벅스_아메리카노 T.jpg`
+ * 파일 이름에 쓸 수 없는 문자는 빼고, 확장자는 올린 사진의 것을 따른다.
+ */
+export function gifticonFileName(brand: string, productName: string, imagePath: string): string {
+  const clean = (s: string) => s.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '').replace(/\s+/g, ' ').trim();
+  const ext = /\.(png|jpe?g)$/i.exec(imagePath)?.[1].toLowerCase() ?? 'jpg';
+  const parts = ['몰아주기', clean(brand), clean(productName)].filter((p) => p.length > 0);
+  return `${parts.join('_').slice(0, 80)}.${ext}`;
+}
+
 /** 서버 calcPrice와 같은 식. 화면 표시 전용이며 실제 가격은 서버가 계산한다. */
 export function previewPrice(faceValue: number, probability: Probability): number {
   return Math.round((faceValue * probability) / 100 / 10) * 10;

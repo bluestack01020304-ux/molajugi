@@ -225,25 +225,35 @@ enabled = true
 # addresses. If disabled, only the new email is required to confirm.
 double_confirm_changes = true
 # If enabled, users need to confirm their email address before signing in.
-enable_confirmations = false
+# 몰아주기: 가입하면 6자리 인증 코드를 메일로 보내고, 코드를 확인해야 로그인된다.
+enable_confirmations = true
 # If enabled, users will need to reauthenticate or have logged in recently to change their password.
 secure_password_change = false
 # Controls the minimum amount of time that must pass before sending another signup confirmation or password reset email.
-max_frequency = "1s"
+max_frequency = "60s"
 # Number of characters used in the email OTP.
 otp_length = 6
 # Number of seconds before the email OTP expires (defaults to 1 hour).
 otp_expiry = 3600
 
+# 인증 메일 양식. 링크 대신 6자리 코드({{ .Token }})를 보낸다: 폰 앱에서는 메일의 링크로 앱에 돌아오기가
+# 까다롭지만 코드 입력은 폰·웹 어디서나 똑같이 동작한다.
+[auth.email.template.confirmation]
+subject = "[몰아주기] 이메일 인증 코드"
+content_path = "./supabase/templates/confirmation.html"
+
+# 로컬에서는 메일이 실제로 나가지 않고 Mailpit(http://127.0.0.1:54324)에 쌓인다.
+# 실제 받은편지함으로 보내려면 메일 발송 서비스(SMTP)의 계정 정보를 아래에 채우고 주석을 푼다.
+# 비밀번호는 여기 적지 말고 supabase/.env의 SMTP_PASS에 둔다.
 # Use a production-ready SMTP server
 # [auth.email.smtp]
 # enabled = true
 # host = "smtp.sendgrid.net"
 # port = 587
 # user = "apikey"
-# pass = "env(SENDGRID_API_KEY)"
-# admin_email = "admin@email.com"
-# sender_name = "Admin"
+# pass = "env(SMTP_PASS)"
+# admin_email = "보내는 주소"
+# sender_name = "몰아주기"
 
 # Uncomment to customize email template
 # [auth.email.template.invite]
@@ -394,7 +404,9 @@ deno_version = 2
 # secret_key = "env(SECRET_VALUE)"
 
 [analytics]
-enabled = true
+# Windows Docker Desktop에서 vector 컨테이너가 Docker 소켓(tcp 2375)에 못 붙어 재시작을 반복하고
+# 그 여파로 functions serve 컨테이너가 떨어지는 문제가 있어 끈다. 로컬 개발에는 필요 없다.
+enabled = false
 port = 54327
 # Configure one of the supported backends: `postgres`, `bigquery`.
 backend = "postgres"
