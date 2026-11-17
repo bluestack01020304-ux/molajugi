@@ -21,7 +21,7 @@
 ```
 npx supabase@latest start      # API http://127.0.0.1:54321, DB 127.0.0.1:54322
 npx supabase@latest status     # 키/URL 확인
-npx supabase@latest db reset   # 데이터 전부 삭제 후 마이그레이션(0001~0005) 재적용
+npx supabase@latest db reset   # 데이터 전부 삭제 후 마이그레이션(0001~0006) 재적용
 ```
 
 `db reset`을 하면 Edge Runtime 컨테이너가 같이 내려가므로 아래 함수 서빙을 다시 띄운다.
@@ -78,6 +78,29 @@ deno run -A --env-file=.env.test tests/seed.ts
 2. `ipconfig`로 PC의 IPv4(LAN) 주소를 찾아 `http://<LAN IP>:54321`로 `EXPO_PUBLIC_SUPABASE_URL`을 채운다. `EXPO_PUBLIC_SUPABASE_ANON_KEY`는 `npx supabase@latest status`의 anon key.
 3. `cd app && npx expo start` 후 폰(같은 Wi-Fi)의 Expo Go로 QR을 스캔한다.
 4. `buyer@test.local` / `test1234`로 로그인해 뽑기, `seller@test.local`로 판매 화면 확인.
+
+### 사진 두 장과 자동 입력
+
+매물마다 사진을 두 장 올린다.
+
+- **원본 사진**: 바코드가 보이는 전체 사진. 비공개 버킷 `gifticons`에 들어가고 판매자와 당첨자만 본다.
+- **보여주는 사진**: 바코드를 잘라 낸 사진. 공개 버킷 `previews`에 들어가고 목록·상세에서 누구나 본다(`listings.preview_path`). 주소만 알면 볼 수 있으니 바코드가 보이는 사진을 여기에 올리면 안 된다.
+
+새로 올릴 때 원본 사진을 고르면 `read-gifticon` 함수가 사진을 두 단계로 읽어 비어 있는 칸을 채운다. 읽은 값은 틀릴 수 있어 판매자가 확인하고 고친다.
+
+1. **바코드 해독 (항상, AI 없음)**: 바코드 무늬를 직접 해독해(`_shared/barcode.ts`, ZXing) 번호를 채우고, 바코드 위치를 앱에 알려 준다. 앱의 자르기 화면은 그 위치를 받아 "보여주는 사진"을 바코드 바로 위까지만 골라 둔다. 바코드를 못 찾으면 사진 위쪽 60%를 기본으로 고른다.
+2. **글자 읽기 (선택, Claude)**: 브랜드·상품명·액면가·유효기간·카테고리를 읽는다. 키가 없으면 이 단계만 건너뛴다.
+
+- **글자 읽기 켜는 법**: `supabase/functions/.env` 파일에 `ANTHROPIC_API_KEY=...`를 적고(커밋 금지, `.gitignore`에 걸려 있음) 함수 서빙을 `npx supabase@latest functions serve --no-verify-jwt --env-file supabase/functions/.env`로 다시 띄운다. 호출할 때마다 API 요금이 든다.
+- 테스트용 서빙(`--env-file supabase/.env.debug`)에는 키를 넣지 않는다.
+
+### 회원가입과 이메일 인증
+
+가입하면 6자리 인증 코드가 메일로 가고, 앱의 인증 화면에 코드를 넣어야 로그인된다(`supabase/config.toml`의 `enable_confirmations`, 메일 양식은 `supabase/templates/confirmation.html`). 링크 대신 코드를 쓰는 이유는 폰 앱에서 메일 링크로 앱에 돌아오기가 까다롭기 때문이다.
+
+- **로컬**: 메일이 실제로 나가지 않고 Mailpit(http://127.0.0.1:54324)에 쌓인다. 거기서 코드를 확인한다.
+- **실제 메일 발송**: `supabase/config.toml`의 `[auth.email.smtp]` 주석을 풀고 메일 발송 서비스(SMTP) 계정을 채운다. 비밀번호는 `supabase/.env`의 `SMTP_PASS`에 둔다(커밋 금지).
+- `supabase/config.toml`을 바꾸면 `npx supabase@latest stop` 후 `start`로 다시 띄워야 적용된다(데이터는 유지). 그다음 함수 서빙도 다시 띄운다.
 
 ## 6. 테스트
 
@@ -142,7 +165,7 @@ app/src/
   hooks/       useSession, useWallet, useUnreadCount, useRules
   lib/         api, supabase 클라이언트, format, scratch
 supabase/
-  migrations/  0001~0005 스키마·RLS
+  migrations/  0001~0006 스키마·RLS
   functions/   create-listing, draw, settle, topup, daily, _shared/rules.ts
   tests/       Deno 테스트, helpers.ts, seed.ts, run-daily.ts
 ```
