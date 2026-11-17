@@ -167,7 +167,7 @@ commit;
    ```
    npx supabase@latest login
    npx supabase@latest link --project-ref <프로젝트 ID>
-   npx supabase@latest db push                            # 마이그레이션 0001~0007
+   npx supabase@latest db push --remote                   # 마이그레이션 0001~0007
    npx supabase@latest functions deploy --no-verify-jwt   # 서버 함수 전부
    npx supabase@latest config push                        # 인증 설정과 메일 양식
    ```
@@ -196,7 +196,11 @@ Supabase의 기본 메일 발송은 프로젝트 팀원 주소로만, 시간당 
    ```
    cd app && npx expo export --platform web
    ```
-3. `app/dist` 폴더를 정적 호스팅에 올린다. Netlify는 app.netlify.com/drop에 폴더를 끌어다 놓으면 되고, Cloudflare Pages도 폴더 업로드를 받는다. 새로고침해도 화면이 열리게 하는 설정(`_redirects`)은 빌드에 들어 있다.
+3. `app/dist` 폴더를 Cloudflare Pages에 올린다. 처음 한 번 `npx wrangler login`으로 로그인한 뒤:
+   ```
+   cd app && npx wrangler pages deploy dist --project-name molajugi
+   ```
+   끝나면 `https://molajugi.pages.dev` 꼴의 주소가 나온다(이름이 이미 쓰이고 있으면 다른 이름으로). 대시보드(Workers & Pages → Create → Pages → Upload assets)에 폴더를 끌어다 놓아도 된다. 새로고침해도 화면이 열리는 것은 Pages가 알아서 처리한다(`_redirects`는 Netlify 같은 다른 호스팅을 위한 것).
 4. 코드를 고친 뒤에는 2~3을 다시 한다. 서버 쪽을 고쳤으면 `db push`나 `functions deploy`도 다시 한다.
 
 ## 10. 구조
