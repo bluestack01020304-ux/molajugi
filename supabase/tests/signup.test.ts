@@ -74,3 +74,27 @@ Deno.test("signing up again with a registered email does not create a second acc
   assertEquals(count, 1);
   assert(first.data.user);
 });
+
+Deno.test("when the invite list has entries, only invited emails can sign up", async () => {
+  const invited = newEmail();
+  const stranger = newEmail();
+  // 대소문자가 달라도 같은 주소로 본다.
+  await sql`insert into signup_allowlist (email, note) values (${invited}, 'test')`;
+  try {
+    const blocked = await newClient().auth.signUp({ email: stranger, password: "test1234" });
+    assert(blocked.error, "an uninvited email must be rejected");
+    // 가입 트리거가 막으면 인증 서버는 500을 돌려준다. 앱(lib/auth.ts)이 이를 초대 안내 문구로 바꾼다.
+    assertEquals(blocked.error.status, 500);
+    const [{ count }] = await sql`select count(*)::int from auth.users where email = ${stranger}`;
+    assertEquals(count, 0);
+
+    const ok = await newClient().auth.signUp({ email: invited.toUpperCase(), password: "test1234" });
+    assertEquals(ok.error, null);
+    assert(ok.data.user, "an invited email signs up as usual");
+  } finally {
+    // 목록을 비워 두지 않으면 다른 테스트의 계정 생성이 모두 막힌다.
+    await sql`delete from signup_allowlist where note = 'test'`;
+  }
+  const open = await newClient().auth.signUp({ email: newEmail(), password: "test1234" });
+  assertEquals(open.error, null); // 목록이 비면 다시 누구나 가입할 수 있다
+});

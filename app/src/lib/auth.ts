@@ -31,10 +31,17 @@ const MESSAGES: Record<string, string> = {
   signup_disabled: '지금은 가입을 받지 않고 있어요',
 };
 
-/** Supabase 인증 오류를 사용자 문구로 바꾼다. 모르는 오류는 일반 문구. */
-export function authErrorMessage(e: unknown): string {
-  const err = e as { code?: string; name?: string } | null;
+/**
+ * Supabase 인증 오류를 사용자 문구로 바꾼다. 모르는 오류는 일반 문구.
+ * signingUp: 가입 요청 중이었는지. 초대 목록(signup_allowlist)에 없는 이메일로 가입하면 서버가 500을 돌려주므로,
+ * 가입 중의 500은 초대 안내로 바꾼다.
+ */
+export function authErrorMessage(e: unknown, signingUp = false): string {
+  const err = e as { code?: string; name?: string; status?: number } | null;
   if (err?.code && MESSAGES[err.code]) return MESSAGES[err.code];
+  if (signingUp && err?.status === 500) {
+    return '지금은 가입할 수 없어요. 초대받은 이메일인지 확인해 주세요';
+  }
   // 서버에 닿지 못한 경우 (와이파이, 서버 꺼짐 등)
   if (err?.name === 'AuthRetryableFetchError') return '서버에 연결하지 못했어요. 잠시 후 다시 시도해 주세요';
   return '잠시 후 다시 시도해 주세요';

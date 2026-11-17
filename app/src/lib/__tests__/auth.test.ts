@@ -21,3 +21,11 @@ test('authErrorMessage never leaks an unknown raw error', () => {
   expect(authErrorMessage({ code: 'something_new', message: 'raw server text' })).toBe('잠시 후 다시 시도해 주세요');
   expect(authErrorMessage(null)).toBe('잠시 후 다시 시도해 주세요');
 });
+
+test('a server error while signing up points at the invite list', () => {
+  const blocked = { name: 'AuthRetryableFetchError', status: 500, message: 'Database error saving new user' };
+  expect(authErrorMessage(blocked, true)).toMatch(/초대받은 이메일인지 확인해 주세요/);
+  // 로그인 중이거나 서버에 아예 닿지 못한 경우는 연결 문제로 안내한다.
+  expect(authErrorMessage(blocked)).toMatch(/서버에 연결하지 못했어요/);
+  expect(authErrorMessage({ name: 'AuthRetryableFetchError' }, true)).toMatch(/서버에 연결하지 못했어요/);
+});

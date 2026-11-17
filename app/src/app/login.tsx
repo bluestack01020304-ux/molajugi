@@ -101,7 +101,7 @@ export default function LoginScreen() {
       else await verify();
     } catch (e) {
       const title = mode === 'login' ? '로그인 실패' : mode === 'signup' ? '회원가입 실패' : '인증 실패';
-      showMessage(title, authErrorMessage(e));
+      showMessage(title, authErrorMessage(e, mode === 'signup'));
     } finally {
       setBusy(false);
     }

@@ -21,7 +21,7 @@
 ```
 npx supabase@latest start      # API http://127.0.0.1:54321, DB 127.0.0.1:54322
 npx supabase@latest status     # 키/URL 확인
-npx supabase@latest db reset   # 데이터 전부 삭제 후 마이그레이션(0001~0006) 재적용
+npx supabase@latest db reset   # 데이터 전부 삭제 후 마이그레이션(0001~0007) 재적용
 ```
 
 `db reset`을 하면 Edge Runtime 컨테이너가 같이 내려가므로 아래 함수 서빙을 다시 띄운다.
@@ -156,7 +156,50 @@ commit;
 
 환불 SQL은 일부러 매물을 `won` 상태 그대로, 뽑기(`draws`) 기록도 바꾸지 않고 둔다(기프티콘은 이미 넘어갔고, 뽑기 이력은 그대로 남겨야 하므로 돈만 되돌린다).
 
-## 9. 구조
+## 9. 지인용 웹 배포
+
+지인 몇 명만 웹 주소로 쓰게 하는 배포다. 서버는 Supabase 호스팅, 화면은 정적 호스팅에 올린다.
+
+### 서버 (Supabase)
+
+1. supabase.com에서 프로젝트를 만든다.
+2. 저장소 루트에서 연결하고 올린다.
+   ```
+   npx supabase@latest login
+   npx supabase@latest link --project-ref <프로젝트 ID>
+   npx supabase@latest db push                            # 마이그레이션 0001~0007
+   npx supabase@latest functions deploy --no-verify-jwt   # 서버 함수 전부
+   npx supabase@latest config push                        # 인증 설정과 메일 양식
+   ```
+3. 대시보드 SQL 편집기에서 매일 작업의 주소와 키를 설정한다 (3장 "매일 작업" 참고).
+4. `supabase/.env.debug`는 올리지 않는다. 글자 자동 입력을 쓰려면 `npx supabase@latest secrets set ANTHROPIC_API_KEY=...`.
+
+### 초대한 사람만 가입시키기
+
+대시보드의 표 편집기에서 `signup_allowlist`에 가입을 허락할 이메일을 소문자로 넣는다(본인 것 포함). 한 줄이라도 있으면 거기 적힌 이메일만 가입할 수 있고, 비어 있으면 누구나 가입할 수 있다. 목록에 없는 이메일로 가입하면 앱이 "초대받은 이메일인지 확인해 주세요"라고 안내한다.
+
+### 인증 메일
+
+Supabase의 기본 메일 발송은 프로젝트 팀원 주소로만, 시간당 몇 통만 보낸다. 지인이 인증 코드를 받으려면 둘 중 하나를 고른다.
+
+- **메일 발송 서비스 연결**: 대시보드 Authentication → SMTP 설정에 Gmail 앱 비밀번호나 Resend 같은 서비스의 계정을 넣는다.
+- **이메일 인증 끄기**: 대시보드 Authentication → Sign In / Providers → Email에서 "Confirm email"을 끈다. 가입하면 바로 로그인된다. 초대 목록으로 가입을 막고 있다면 지인용으로는 이것으로 충분하다.
+
+### 화면 (웹)
+
+1. `app/.env.production` 파일을 만들고 호스팅 프로젝트의 값을 적는다(커밋되지 않는다). 로컬용 `app/.env`는 그대로 둔다.
+   ```
+   EXPO_PUBLIC_SUPABASE_URL=https://<프로젝트 ID>.supabase.co
+   EXPO_PUBLIC_SUPABASE_ANON_KEY=<대시보드 API 설정의 anon 키>
+   ```
+2. 빌드한다. 결과는 `app/dist`에 생긴다.
+   ```
+   cd app && npx expo export --platform web
+   ```
+3. `app/dist` 폴더를 정적 호스팅에 올린다. Netlify는 app.netlify.com/drop에 폴더를 끌어다 놓으면 되고, Cloudflare Pages도 폴더 업로드를 받는다. 새로고침해도 화면이 열리게 하는 설정(`_redirects`)은 빌드에 들어 있다.
+4. 코드를 고친 뒤에는 2~3을 다시 한다. 서버 쪽을 고쳤으면 `db push`나 `functions deploy`도 다시 한다.
+
+## 10. 구조
 
 ```
 app/src/
@@ -165,7 +208,7 @@ app/src/
   hooks/       useSession, useWallet, useUnreadCount, useRules
   lib/         api, supabase 클라이언트, format, scratch
 supabase/
-  migrations/  0001~0006 스키마·RLS
+  migrations/  0001~0007 스키마·RLS
   functions/   create-listing, draw, settle, topup, daily, _shared/rules.ts
   tests/       Deno 테스트, helpers.ts, seed.ts, run-daily.ts
 ```
