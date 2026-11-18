@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from 'expo-router';
-import { Pressable, StyleSheet, Text, View, type ColorValue } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text, View, type ColorValue } from 'react-native';
 
 import { Logo } from '@/components/Logo';
 import { Icon, type IconName } from '@/components/ui/Icon';
@@ -47,8 +47,8 @@ export default function TabsLayout() {
         headerStyle: { backgroundColor: colors.bg },
         tabBarActiveTintColor: colors.ink,
         tabBarInactiveTintColor: colors.sub,
-        tabBarLabelStyle: { fontSize: 10 },
-        tabBarStyle: { borderTopColor: colors.line, backgroundColor: colors.bg },
+        tabBarLabelStyle: { fontSize: 10, lineHeight: 14 },
+        tabBarStyle: [{ borderTopColor: colors.line, backgroundColor: colors.bg }, webTabBar],
         sceneStyle: { backgroundColor: colors.bg },
         animation: 'fade',
       }}>
@@ -80,6 +80,10 @@ export default function TabsLayout() {
     </Tabs>
   );
 }
+
+// 웹에서는 기본 탭바 높이가 낮아 글자 아랫부분이 잘린다. 높이와 위아래 여백을 직접 준다.
+// 폰에서는 기기 하단 여백(홈 표시줄)을 탭바가 알아서 계산하므로 건드리지 않는다.
+const webTabBar = Platform.OS === 'web' ? { height: 64 } : null;
 
 const styles = StyleSheet.create({
   homeTitle: { flexDirection: 'row', alignItems: 'center', gap: 8 },
