@@ -158,50 +158,43 @@ commit;
 
 ## 9. 지인용 웹 배포
 
-지인 몇 명만 웹 주소로 쓰게 하는 배포다. 서버는 Supabase 호스팅, 화면은 정적 호스팅에 올린다.
+지인 몇 명만 웹 주소로 쓰게 하는 배포다. 서버는 Supabase 호스팅, 화면은 Cloudflare Workers(정적 파일)에 올린다.
+
+현재 배포: 화면 https://molajugi.jnp-lab.workers.dev · 서버는 Supabase 프로젝트 `molajugi`(`vsleotllcsxiiqukjinw`).
 
 ### 서버 (Supabase)
 
-1. supabase.com에서 프로젝트를 만든다.
-2. 저장소 루트에서 연결하고 올린다.
-   ```
-   npx supabase@latest login
-   npx supabase@latest link --project-ref <프로젝트 ID>
-   npx supabase@latest db push --remote                   # 마이그레이션 0001~0007
-   npx supabase@latest functions deploy --no-verify-jwt   # 서버 함수 전부
-   npx supabase@latest config push                        # 인증 설정과 메일 양식
-   ```
-3. 대시보드 SQL 편집기에서 매일 작업의 주소와 키를 설정한다 (3장 "매일 작업" 참고).
-4. `supabase/.env.debug`는 올리지 않는다. 글자 자동 입력을 쓰려면 `npx supabase@latest secrets set ANTHROPIC_API_KEY=...`.
+처음 한 번 `npx supabase@latest login`과 `npx supabase@latest link --project-ref vsleotllcsxiiqukjinw`를 해 둔다. 그 뒤 고친 것에 따라 저장소 루트에서:
+
+```
+npx supabase@latest db push --remote                   # 마이그레이션을 고쳤을 때
+npx supabase@latest functions deploy --no-verify-jwt   # 서버 함수를 고쳤을 때
+```
+
+- `supabase/.env.debug`는 올리지 않는다. 글자 자동 입력을 쓰려면 `npx supabase@latest secrets set ANTHROPIC_API_KEY=...`.
+- 매일 작업(만료 처리, 자동 정산)은 대시보드 SQL 편집기에서 주소와 키를 한 번 설정해야 돈다 (3장 "매일 작업" 참고). 아직 설정하지 않았다.
+
+### 인증 설정
+
+호스팅에서는 이메일 인증을 꺼 두었다: 가입하면 바로 로그인된다. Supabase의 기본 메일 발송은 프로젝트 팀원 주소로만 가서, 메일 발송 서비스(SMTP)를 붙이기 전에는 지인이 인증 코드를 받을 수 없기 때문이다. 호스팅 전용 값은 `supabase/config.toml` 맨 아래 `[remotes.production]`에 있다.
+
+`npx supabase@latest config push`는 무료 요금제에서 메일 양식(`[auth.email.template.confirmation]`) 때문에 거절된다(양식 변경은 SMTP를 붙여야 허용). 인증 설정을 다시 올려야 하면 그 세 줄을 잠시 지우고 올린 뒤 되돌린다. SMTP를 붙인 뒤에는 그대로 올리면 되고, 그때 `[remotes.production.auth.email]`의 `enable_confirmations`를 `true`로 바꾸면 코드 인증이 켜진다.
 
 ### 초대한 사람만 가입시키기
 
-대시보드의 표 편집기에서 `signup_allowlist`에 가입을 허락할 이메일을 소문자로 넣는다(본인 것 포함). 한 줄이라도 있으면 거기 적힌 이메일만 가입할 수 있고, 비어 있으면 누구나 가입할 수 있다. 목록에 없는 이메일로 가입하면 앱이 "초대받은 이메일인지 확인해 주세요"라고 안내한다.
+대시보드의 표 편집기에서 `signup_allowlist`에 가입을 허락할 이메일을 소문자로 넣는다(본인 것 포함). 한 줄이라도 있으면 거기 적힌 이메일만 가입할 수 있고, 비어 있으면 주소를 아는 누구나 가입할 수 있다. 목록에 없는 이메일로 가입하면 앱이 "초대받은 이메일인지 확인해 주세요"라고 안내한다.
 
-### 인증 메일
+### 화면 (Cloudflare)
 
-Supabase의 기본 메일 발송은 프로젝트 팀원 주소로만, 시간당 몇 통만 보낸다. 지인이 인증 코드를 받으려면 둘 중 하나를 고른다.
+`app/.env.production`에 호스팅 서버의 주소와 공개(anon) 키가 들어 있다(커밋되지 않는다). 로컬용 `app/.env`와 따로 쓰이고, 웹 빌드에만 들어간다. 처음 한 번 `npx wrangler login`을 해 둔다. 화면을 고친 뒤에는:
 
-- **메일 발송 서비스 연결**: 대시보드 Authentication → SMTP 설정에 Gmail 앱 비밀번호나 Resend 같은 서비스의 계정을 넣는다.
-- **이메일 인증 끄기**: 대시보드 Authentication → Sign In / Providers → Email에서 "Confirm email"을 끈다. 가입하면 바로 로그인된다. 초대 목록으로 가입을 막고 있다면 지인용으로는 이것으로 충분하다.
+```
+cd app
+npx expo export --platform web   # app/dist에 빌드
+npx wrangler deploy              # app/wrangler.jsonc 설정대로 Cloudflare에 올린다
+```
 
-### 화면 (웹)
-
-1. `app/.env.production` 파일을 만들고 호스팅 프로젝트의 값을 적는다(커밋되지 않는다). 로컬용 `app/.env`는 그대로 둔다.
-   ```
-   EXPO_PUBLIC_SUPABASE_URL=https://<프로젝트 ID>.supabase.co
-   EXPO_PUBLIC_SUPABASE_ANON_KEY=<대시보드 API 설정의 anon 키>
-   ```
-2. 빌드한다. 결과는 `app/dist`에 생긴다.
-   ```
-   cd app && npx expo export --platform web
-   ```
-3. `app/dist` 폴더를 Cloudflare Pages에 올린다. 처음 한 번 `npx wrangler login`으로 로그인한 뒤:
-   ```
-   cd app && npx wrangler pages deploy dist --project-name molajugi
-   ```
-   끝나면 `https://molajugi.pages.dev` 꼴의 주소가 나온다(이름이 이미 쓰이고 있으면 다른 이름으로). 대시보드(Workers & Pages → Create → Pages → Upload assets)에 폴더를 끌어다 놓아도 된다. 새로고침해도 화면이 열리는 것은 Pages가 알아서 처리한다(`_redirects`는 Netlify 같은 다른 호스팅을 위한 것).
-4. 코드를 고친 뒤에는 2~3을 다시 한다. 서버 쪽을 고쳤으면 `db push`나 `functions deploy`도 다시 한다.
+새로고침해도 화면이 열리는 것은 `wrangler.jsonc`의 `not_found_handling`이 처리한다. 올린 직후 1분쯤은 404가 날 수 있다.
 
 ## 10. 구조
 

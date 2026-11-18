@@ -432,3 +432,22 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# 호스팅 프로젝트(지인용 배포)에만 적용되는 설정. `npx supabase@latest config push`가 이 프로젝트에 올릴 때
+# 위의 로컬 값 대신 아래 값을 쓴다.
+[remotes.production]
+project_id = "vsleotllcsxiiqukjinw"
+
+# 지인용 배포에서는 이메일 인증을 끈다: 가입하면 바로 로그인된다.
+# Supabase의 기본 메일 발송은 프로젝트 팀원에게만 가므로, 메일 발송 서비스(SMTP)를 붙이기 전에는
+# 지인이 인증 코드를 받을 수 없다. 가입 제한은 signup_allowlist(초대 목록)가 맡는다.
+[remotes.production.auth.email]
+enable_confirmations = false
+
+[remotes.production.auth]
+site_url = "https://molajugi.jnp-lab.workers.dev"
+additional_redirect_urls = []
+
+# 벡터 버킷은 유료 요금제 기능이고 이 앱은 쓰지 않는다.
+[remotes.production.storage.vector]
+enabled = false
