@@ -1,0 +1,11 @@
+// Cloudflare Workers에 웹 빌드(app/dist)를 정적 파일로 올리는 설정.
+// 배포: cd app && npx expo export --platform web && npx wrangler deploy
+{
+  "name": "molajugi",
+  "compatibility_date": "2026-11-01",
+  "assets": {
+    "directory": "./dist",
+    // 없는 경로로 들어와도 index.html을 돌려준다: 상세 화면 등에서 새로고침해도 앱이 열린다.
+    "not_found_handling": "single-page-application"
+  }
+}
